@@ -1,0 +1,69 @@
+---
+title: "Ejercicios - Clase 2"
+author: "Macarena Fernandez Urquiza"
+date: "25 de septiembre de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("tidyverse")
+```
+
+## Dplyr
+
+**glimpse:** permite ver la estructura de la tabla
+
+**filter:** permite filtrar la tabla según se cumplan las condiciones establecidas (AND: **,**, OR: **|**)
+
+**rename:** permite renombrar una columna
+
+**mutate:** permite agregar una variable a la tabla (puede ser el resultado de aplicar determinadas operaciones sobre otra/s variable/s)
+
+**case_when:** permite defiir una variable que tomará un valor determinado cuando se cumpla determinada condición
+
+**select:** permite especificar la serie de columnas que se deasen conservar de un df
+
+**arrange:** permite ordernar la tala por los valores de determinadas variables
+
+**summarise:** resume la info de la tabla original; para esto se define la variable de resume  y la forma de agrgación
+
+**group_by:** permite realizar agrupaciones
+
+**joins:**
+
+ - weigthed.mean(x, w=PONDERADOR)
+ 
+## Tidyr
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+

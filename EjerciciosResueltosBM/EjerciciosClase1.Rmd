@@ -55,14 +55,3 @@ t = read.table(pathprueba,sep=";", dec=",", header = TRUE, fill = TRUE) %>%
 
 expanded_freq(t)
 ```
-
-- Modificar la función anterior para que devuelva un vector con la frecuencia muestral y la frecuencia poblacional
-
-```{r}
-TO DO
-```
-
-- Utilizar la función modificada para calcular las frecuencias muestrales y poblacionales por Sexo y Región
-
-```{r}
-```

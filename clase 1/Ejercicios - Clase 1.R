@@ -23,12 +23,14 @@ apply(X=df, MARGIN =2 , FUN=sum)
 #b) ¿Cuál es la media de la expectativa de vida?
 apply(X=df, MARGIN =2 , FUN=mean)
 #c) ¿Cual es la mediana del ingreso en pesos argentinos?
-apply(X=df, MARGIN =2 , FUN=function(x) median(x)*30.4)
+apply(X=df, MARGIN =2 , FUN=function(x) median(x)*59)
 # 3) Crear el dataset con las dos columnas
 df_indice <- df[,c(3, 5)]
+head(df)
+head(df_indice)
 # Crear el indice
 ilit_murd <- apply(X=df_indice, MARGIN =1 , FUN=sum)
-
+head(ilit_murd)
 #Para buscar los máximos y mínimos armo una máscara booleana
 ilit_murd[ilit_murd==max(ilit_murd)]
 ilit_murd[ilit_murd==min(ilit_murd)]
