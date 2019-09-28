@@ -15,6 +15,11 @@ library("tidyverse")
 
 ## Dplyr
 
+Agrupa una serie de paquetes:
+
+  - ggplot: permite realizar gráficos
+  - dplyr y tidyr: permiten realizar transformaciones sobre los datasets
+
 **glimpse:** permite ver la estructura de la tabla
 
 **filter:** permite filtrar la tabla según se cumplan las condiciones establecidas (AND: **,**, OR: **|**)
@@ -37,10 +42,45 @@ library("tidyverse")
 
  - weigthed.mean(x, w=PONDERADOR)
  
-## Tidyr
+### Tidyr
 
+Facilita el emprolijamiento de los datos.
+
+**Gather:** función que permite pasar los datos de forma horizontal a una forma vertical
+
+**Spread:** una función que npermite pasar los datos de forma vertical a una forma horizontal
+
+### Ggplot2
+
+Gráficos como capas que se construyen a la vez.
+
+[Cheetsheat](https://rstudio.com/wp-content/uploads/2016/11/ggplot2-cheatsheet-2.1.pdf)
+
+## Lubridate
+
+Paquete pensado para trabajar con datos del tipo fechas o fechahora, para cambiarles el formato, realizar operaciones y extraer info.
+
+### Cambio de formato:
+
+- dmy_hms()
+- parse_date_time(x, orders='my')
+
+### Extracción de información
+
+- year()
+- month()
+- day()
+- wday(fecha, label=TRUE): devuelve el nombre del día
+- hour()
+
+### Operaciones
+
+- fecha + days(2)
+- fecha - (weeks(1) + hours(2))
 ```{r}
-
+install.packages('gganimate')
+install.packages('ggridge')
+install.packages('GGally')
 ```
 
 ```{r}
