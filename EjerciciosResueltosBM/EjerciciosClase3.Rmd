@@ -72,21 +72,13 @@ mean_trimmed_vector
 # Divido el dataset por la variable cyl como una lista
 cyl_list <- mtcars %>% 
   group_by(cyl) %>% 
-  nest()  %>% 
+  nest() %>% 
   select(data)  %>% 
   t() %>% 
-  setNames(unique(mtcars$cyl))
+  setNames(unique(mtcars$cyl)) 
 
-# Función que calcula el número de filas por elemento de la lista
-get_nrows <- function(lista){
-  for (i in names(lista)){
-    tabla = get(i, lista)
-    rows = nrow(tabla)
-    print(paste('cyl:',i, '- Nro de columntas:', rows))
-}
-}
-
-get_nrows(cyl_list)
+cyl_list %>% 
+  map(nrow)
 ```
 
 5) Para cada elemento de la lista de 4, calcular la media de cada columna. Devolver los resultados como un dataframe con un registro por cada elemento de la lista (o sea, 3).
@@ -98,6 +90,5 @@ cyl_list %>%
   as.data.frame() %>% 
   mutate(cyl=names(cyl_list)) %>% 
   select(cyl, data) %>% 
-  mutate(means=map(data, mean)) %>% 
-  unnest(means)
+  unnest(data)
 ```
