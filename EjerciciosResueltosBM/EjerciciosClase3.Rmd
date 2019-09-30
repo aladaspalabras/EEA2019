@@ -84,10 +84,16 @@ cyl_list %>%
 5) Para cada elemento de la lista de 4, calcular la media de cada columna. Devolver los resultados como un dataframe con un registro por cada elemento de la lista (o sea, 3).
 
 ```{r}
+mean_of_cols <- function(df){
+  m = colMeans(df) %>% 
+    t() %>% 
+    as.data.frame()
+}
+
 cyl_list %>% 
   t() %>% 
   as.data.frame() %>% 
   mutate(cyl=names(cyl_list)) %>% 
   select(cyl, data) %>% 
-  mutate(col_mean=map(data, colMeans))
+  mutate(col_mean=map(data, mean_of_cols))
 ```
