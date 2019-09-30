@@ -82,7 +82,6 @@ cyl_list %>%
 ```
 
 5) Para cada elemento de la lista de 4, calcular la media de cada columna. Devolver los resultados como un dataframe con un registro por cada elemento de la lista (o sea, 3).
-- Crear una función que calcule la frecuencia expandida por un PONDERA
 
 ```{r}
 cyl_list %>% 
@@ -90,5 +89,5 @@ cyl_list %>%
   as.data.frame() %>% 
   mutate(cyl=names(cyl_list)) %>% 
   select(cyl, data) %>% 
-  unnest(data)
+  mutate(col_mean=map(data, colMeans))
 ```
