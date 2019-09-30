@@ -95,5 +95,6 @@ cyl_list %>%
   as.data.frame() %>% 
   mutate(cyl=names(cyl_list)) %>% 
   select(cyl, data) %>% 
-  mutate(col_mean=map(data, mean_of_cols))
+  mutate(col_mean=map(data, mean_of_cols)) %>% 
+  unnest(col_mean)
 ```
