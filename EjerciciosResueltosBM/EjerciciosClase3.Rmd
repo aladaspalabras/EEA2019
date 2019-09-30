@@ -1,0 +1,103 @@
+---
+title: "Ejercicios - Clase 3"
+author: "Macarena Fernandez Urquiza"
+date: "21 de septiembre de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Definición de funciones
+
+- Crear una función llamada HolaMundo que imprima el texto “Hola mundo”
+
+```{r}
+hello <- function(){
+  print('Hola mundo')
+}
+hello()
+```
+
+- Crear una función que devuelva la sumatoria de los números enteros comprendidos entre 1 y un parámetro x a definir.
+
+```{r}
+sumatoria_enteros <- function(x){
+  n <- c(1:x)
+  sum(n)
+}
+sumatoria_enteros(10)
+```
+
+
+## Ejercicios sobre PURR
+
+1) Para cada columna de mtcars, calcular la media. Devolver una lista.
+
+```{r}
+library(tidyverse)
+
+mean_list <- map(mtcars, mean) %>% setNames(colnames(mtcars))
+
+mean_list
+```
+
+2)  Hacer lo mismo que en 1, pero devolver un vector nombrado.
+
+```{r}
+mean_vector <- map(mtcars, mean) %>% setNames(colnames(mtcars)) %>% unlist()
+
+mean_vector
+```
+
+3) Calcular la media, pero podando el 5% de los valores más altos y bajos.
+
+```{r}
+mean_trimmed <- function(column){
+  mean(column, trim=0.5)
+}
+mean_trimmed_vector <- mtcars %>% 
+  map(., mean_trimmed) %>% 
+  setNames(colnames(mtcars)) %>% 
+  unlist()
+
+
+mean_trimmed_vector
+```
+
+4) Dividir el dataset por la variable cyl como una lista y calcular el numero de filas por elemento de la lista.
+
+```{r}
+# Divido el dataset por la variable cyl como una lista
+cyl_list <- mtcars %>% 
+  group_by(cyl) %>% 
+  nest()  %>% 
+  select(data)  %>% 
+  t() %>% 
+  setNames(unique(mtcars$cyl))
+
+# Función que calcula el número de filas por elemento de la lista
+get_nrows <- function(lista){
+  for (i in names(lista)){
+    tabla = get(i, lista)
+    rows = nrow(tabla)
+    print(paste('cyl:',i, '- Nro de columntas:', rows))
+}
+}
+
+get_nrows(cyl_list)
+```
+
+5) Para cada elemento de la lista de 4, calcular la media de cada columna. Devolver los resultados como un dataframe con un registro por cada elemento de la lista (o sea, 3).
+- Crear una función que calcule la frecuencia expandida por un PONDERA
+
+```{r}
+cyl_list %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(cyl=names(cyl_list)) %>% 
+  select(cyl, data) %>% 
+  mutate(means=map(data, mean)) %>% 
+  unnest(means)
+```
