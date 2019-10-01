@@ -1,0 +1,146 @@
+---
+title: "Trabajo Práctico N°1"
+author: "Macarena Fernandez Urquiza"
+output: html_notebook
+---
+
+## 1. Preparación de los datos (I)
+
+ - a) Leer el archivo ar_properties.csv y mostrar su estructura
+
+Importo la librería tidyverse.
+
+```{r}
+library(tidyverse)
+library(data.table, warn.conflicts = FALSE)
+```
+
+Cargo el dataset.
+
+```{r}
+dataset = fread("ar_properties.csv")
+```
+
+Muestro la estructura de los datos. 
+
+```{r}
+summary(dataset)
+```
+
+Primero lo hago con la función summary de R base porque me muestra de qué tipo es cada variable y me calcula las medidas de posición y los faltantes de cada una. 
+Pero como veo que hay variables de tipo character también y quiero ver cuáles son sus valores, de manera general, utilizo la función glimpse de la librería Tidyverse. Esta función no me muestra las medidas de posición, pero sí algunos valores y qué tipo de variable es cada una.
+
+```{r}
+glimpse(dataset)
+```
+
+l1: países
+l2: ciudades o localidades
+l3: barrios
+l4: barrios/localidades
+l5: barrios
+currency: moneda
+
+ - b) Quedarse con aquellos registros que:
+     - Pertenecen a Argentina y Capital Federal
+     - Cuyo precio esta en dólares (USD)
+     - El tipo de propiedad sea: Departamento, PH o Casa
+     - El tipo de operacion sea Venta
+
+La especificación de Argentina debería estar en ly, y la de Capital Federal, en l2, l3 o l4. Chequeo.
+
+```{r}
+unique(dataset$l1)
+unique(dataset$l2)
+unique(dataset$l3)
+unique(dataset$l4)
+unique(dataset$l5)
+
+unique(dataset$currency)
+
+unique(dataset$property_type)
+
+unique(dataset$operation_type)
+```
+
+l1 == Argentina
+l2 == Capital Federal
+currency == USD
+property_type == Departamento PH Casa
+operation_type == Venta
+
+```{r}
+dataset_venta <- dataset %>% 
+  filter(l1 == 'Argentina',
+         l2 == 'Capital Federal',
+         currency == 'USD',
+         property_type %in% c('Departamento','PH','Casa'),
+         operation_type == 'Venta')
+```
+
+ - c) Seleccionar las variables id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price y property_type
+
+```{r}
+dataset_filtrado <- dataset_venta %>% 
+  select(id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price, property_type)
+```
+
+Deberían llegar a un dataset con 61905 observaciones y 9 variables => ÉXITOS
+
+## 2. Analisis exploratorios (I)
+
+ - a) Obtener la cantidad de valores únicos y de valores faltantes (NAs) para cada una de estas variables
+
+Cantidad de valores únicos por variable:
+
+```{r}
+unique_values <- dataset_filtrado %>% 
+  summarise_all(n_distinct) #de dplyr
+```
+
+Cantidad de valores faltantes por variable:
+
+```{r}
+na_values <- dataset_filtrado %>% 
+  is.na() %>% 
+  colSums() %>% 
+  t() %>% 
+  as.data.frame()
+```
+
+ - b) Obtener la matriz de correlacion para las variables numéricas. Pista: usen ‘complete.obs’ para poder omitir los valores faltantes.
+
+```{r}
+
+```
+
+## 3. Preparacion de los datos (II)
+
+ - a) En el punto 2 deberian haber encontrado que la variable bedrooms presenta una alta proporción de valores faltantes y que presenta una fuerte correlacion con la variable rooms. Por lo tanto, vamos a eliminarla.
+
+```{r}
+library(corrr)
+
+dataset_filtrado %>% 
+  corrr::correlate()
+```
+
+ - b) Eliminar todos los registros que presentan valores faltantes
+
+```{r}
+
+```
+
+Deberían llegar a un dataset con 51210 observaciones y 8 variables
+
+
+
+
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
