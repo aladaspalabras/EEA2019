@@ -13,6 +13,8 @@ Importo la librería tidyverse.
 ```{r}
 library(tidyverse)
 library(data.table, warn.conflicts = FALSE)
+library(corrr)
+library(GGally, warn.conflicts = FALSE)
 ```
 
 Cargo el dataset.
@@ -50,17 +52,17 @@ currency: moneda
 La especificación de Argentina debería estar en ly, y la de Capital Federal, en l2, l3 o l4. Chequeo.
 
 ```{r}
-unique(dataset$l1)
-unique(dataset$l2)
-unique(dataset$l3)
-unique(dataset$l4)
-unique(dataset$l5)
+#unique(dataset$l1)
+#unique(dataset$l2)
+#unique(dataset$l3)
+#unique(dataset$l4)
+#unique(dataset$l5)
 
-unique(dataset$currency)
+#unique(dataset$currency)
 
-unique(dataset$property_type)
+#unique(dataset$property_type)
 
-unique(dataset$operation_type)
+#unique(dataset$operation_type)
 ```
 
 l1 == Argentina
@@ -110,8 +112,31 @@ na_values <- dataset_filtrado %>%
 
  - b) Obtener la matriz de correlacion para las variables numéricas. Pista: usen ‘complete.obs’ para poder omitir los valores faltantes.
 
-```{r}
 
+```{r}
+dataset_filtrado %>% 
+  select_if(is.numeric) %>% 
+  correlate(use="complete.obs") %>% 
+  shave() %>% 
+  fashion()
+```
+
+```{r}
+dataset_filtrado %>% 
+  select_if(is.numeric) %>% 
+  correlate(use="complete.obs")  %>% 
+  rplot()
+```
+
+```{r}
+dataset_filtrado %>% 
+  select_if(is.numeric) %>%
+  ggcorr(method = c("complete.obs","pearson"), 
+         name = "Correlograma de variables",
+         low = "#044B36", high = "#69051B") #, mid = "#E2F5A0")
+
+
+help("ggcorr")
 ```
 
 ## 3. Preparacion de los datos (II)
@@ -119,8 +144,6 @@ na_values <- dataset_filtrado %>%
  - a) En el punto 2 deberian haber encontrado que la variable bedrooms presenta una alta proporción de valores faltantes y que presenta una fuerte correlacion con la variable rooms. Por lo tanto, vamos a eliminarla.
 
 ```{r}
-library(corrr)
-
 dataset_filtrado %>% 
   corrr::correlate()
 ```
