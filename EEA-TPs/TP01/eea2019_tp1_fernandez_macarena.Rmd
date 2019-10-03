@@ -14,6 +14,7 @@ Importo la librería tidyverse.
 library(tidyverse)
 library(data.table, warn.conflicts = FALSE)
 library(corrr)
+library(ggplot2)
 library(GGally, warn.conflicts = FALSE)
 ```
 
@@ -112,7 +113,6 @@ na_values <- dataset_filtrado %>%
 
  - b) Obtener la matriz de correlacion para las variables numéricas. Pista: usen ‘complete.obs’ para poder omitir los valores faltantes.
 
-
 ```{r}
 dataset_filtrado %>% 
   select_if(is.numeric) %>% 
@@ -128,42 +128,129 @@ dataset_filtrado %>%
   rplot()
 ```
 
-```{r}
-dataset_filtrado %>% 
-  select_if(is.numeric) %>%
-  ggcorr(method = c("complete.obs","pearson"), 
-         name = "Correlograma de variables",
-         low = "#044B36", high = "#69051B") #, mid = "#E2F5A0")
-
-
-help("ggcorr")
-```
-
 ## 3. Preparacion de los datos (II)
 
- - a) En el punto 2 deberian haber encontrado que la variable bedrooms presenta una alta proporción de valores faltantes y que presenta una fuerte correlacion con la variable rooms. Por lo tanto, vamos a eliminarla.
+ - a) En el punto 2 deberían haber encontrado que la variable bedrooms presenta una alta proporción de valores faltantes y que presenta una fuerte correlación con la variable rooms. Por lo tanto, vamos a eliminarla.
 
 ```{r}
-dataset_filtrado %>% 
-  corrr::correlate()
+dataset_sin_bedrooms <- dataset_filtrado %>% 
+  select(-c(bedrooms))
 ```
 
  - b) Eliminar todos los registros que presentan valores faltantes
 
 ```{r}
+dataset_sin_NA <- dataset_sin_bedrooms %>% 
+  na.omit()
+```
+
+Deberían llegar a un dataset con 51210 observaciones y 8 variables => ÉXITO
+
+## 4.Analisis exploratorios (II)
+
+ - a) Obtener estadísticas descriptivas para la variable precio (cuartiles, promedio, mínimo y máximo) y realizar un histograma de la variable.
+ 
+```{r}
+dataset_sin_NA %>% 
+  select(price) %>% 
+  summary()
+
+dataset_sin_NA %>% 
+  summarise(Q1 = quantile(x = price, probs = 0.25, names = FALSE), 
+            Q3 = quantile(x = price, probs = 0.75, names = FALSE), 
+            promedio = mean(price), 
+            mín = min(price), 
+            máx = max(price))
+```
+```{r}
+library(hrbrthemes)
+
+# basic histogram
+dataset_sin_NA %>% 
+  ggplot(aes(x=price)) + 
+  geom_histogram(fill="#69b3a2", color="#e9ecef") + 
+  ggtitle("Histograma") + 
+  theme_minimal()
+  
+```
+
+ - b) Obtener estadísticas descriptivas para la variable precio (cuartiles, promedio, mínimo y máximo) por cada tipo de propiedad.
+ 
+```{r}
+dataset_sin_NA %>% 
+  group_by(property_type) %>% 
+  summarise(Q1 = quantile(x = price, probs = 0.25, names = FALSE), 
+            Q3 = quantile(x = price, probs = 0.75, names = FALSE), 
+            promedio = mean(price), 
+            mín = min(price), 
+            máx = max(price))
+```
+
+ - c) Realizar un gráfico de boxplot de la variable precio por tipo de propiedad.
+
+Primero cambio las variables nominales a numerales discretas.
+
+```{r}
+ggdata <- dataset_sin_NA %>% 
+  mutate(id = as.factor(id),
+         l3 = as.factor(l3),
+         property_type = as.factor(property_type))
+
+ggplot(ggdata, aes(x = property_type, y = price, group = property_type, fill = property_type)) +
+  geom_boxplot() +
+  labs(title='Precio por tipo de propiedad',
+       x = 'Tipos de propiedad',
+       y = 'Precio (USD)') +
+  scale_y_continuous(limits = c(5000, 2000000))
+```
+
+ - d) Realizar un correlagrama usando GGAlly.
+
+```{r}
+dataset_sin_NA %>% 
+  select_if(is.numeric) %>%
+  ggcorr(method = c("complete.obs","pearson"),
+         low = '#e0f3db',
+         mid = '#a8ddb5',
+         high = '#43a2ca',
+         label = TRUE,
+         label_color = "black",
+         nbreaks = 5,
+         hjust = 0.75,
+         legend.position = "left") +
+  labs(title = "Propiedades en venta en CABA - Correlograma")
+
+help(ggcorr)
+```
+
+## 5. Outliers
+
+ - Eliminar los outliers de la variable precio con algún criterio que elijan: puede ser por valores de corte, eliminar el x% a izquierda y derecha,etc.
+ 
+```{r}
 
 ```
 
-Deberían llegar a un dataset con 51210 observaciones y 8 variables
+## 6. Analisis exploratorios (III)
 
+ - Repetir los 4 análisis exploratorios realizados en el punto 4 y realizar unos breves comentarios sobre los cambios que encontraron.
+ 
+```{r}
 
+```
+ 
+## 7. Modelo lineal
 
+ - a) Realizar un modelo lineal simple para explicar el precio en función de las habitaciones (rooms) y otro modelo que explique el precio en función de la superficie total (surface_total)
 
+```{r}
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+ - b) Usar la función summary() para obtener informacion de ambos modelos. Explicar los valores de los coeficientes estimados.
+ 
+```{r}
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
-
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```
+ 
+ - c) ¿Cuál modelo usarían para predecir el precio? ¿Por qué?
