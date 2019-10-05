@@ -168,8 +168,11 @@ library(hrbrthemes)
 # basic histogram
 dataset_sin_NA %>% 
   ggplot(aes(x=price)) + 
-  geom_histogram(fill="#69b3a2", color="#e9ecef") + 
-  ggtitle("Histograma") + 
+  geom_histogram(fill="#69b3a2", color="#e9ecef", bins = 50) + 
+  #ggtitle("Histograma de precios") + 
+  labs(title='Histograma de precios',
+       x = 'Precios (USD)',
+       y = 'count')
   theme_minimal()
   
 ```
@@ -200,8 +203,10 @@ ggplot(ggdata, aes(x = property_type, y = price, group = property_type, fill = p
   geom_boxplot() +
   labs(title='Precio por tipo de propiedad',
        x = 'Tipos de propiedad',
-       y = 'Precio (USD)') +
-  scale_y_continuous(limits = c(5000, 2000000))
+       y = 'Precio (USD)')
+
+# El boxplot no es una buena indicación de outliers
+#scale_y_continuous(limits = c(5000, 2000000))
 ```
 
  - d) Realizar un correlagrama usando GGAlly.

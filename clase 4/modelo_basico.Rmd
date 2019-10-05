@@ -91,10 +91,11 @@ Para computar la distancia, primero necesitamos una función que represente a nu
   Crear una función que reciba un vector con los parametros del modelo, y el set de datos, y genere la predicción:
   
 ```{r}
-# model1 <- function(a, data) {
-# 
-#   
-#   }
+model1 <- function(a, data) {
+  data %>% 
+    mutate(pred = x * a[2] + a[1])
+  }
+
 model1(c(7, 1.5), sim1)
 ```
 
@@ -110,9 +111,14 @@ $$ECM = \sqrt\frac{\sum_i^n{(\hat{y_i} - y_i)^2}}{n}$$
 
 ```{r}
 
-# measure_distance <- function(mod, data) {
-# 
-#   }
+#measure_distance <- function(mod, data) {
+#  y_hat <- model1(mod, data) %>% 
+#    mutate(error= (pred-y)^2) %>% 
+#    select(error) %>% 
+#    sum()
+#  ECM = sqrt(sumatoria / length(data))
+#  print(ECM)
+#}
 measure_distance(c(7, 1.5), sim1)
 ```
 
@@ -128,13 +134,13 @@ Nosotros tenemos que pasar pasar los valores de a1 y a2 (dos parámetros --> map
 
 
 ```{r}
-sim1_dist <- function(a1, a2) {
-  measure_distance(c(a1, a2), sim1)
-}
+#sim1_dist <- function(a1, a2) {
+#  measure_distance(c(a1, a2), sim1)
+#}
 
-models <- models %>% 
-  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
-models
+#models <- models %>% 
+#  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+#models
 ```
 
 
