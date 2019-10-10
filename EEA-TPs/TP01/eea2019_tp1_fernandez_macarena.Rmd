@@ -1,25 +1,42 @@
 ---
-title: "Trabajo Práctico N°1"
+title: "Trabajo Práctico N°1 ^[El código exhibido en este trabajo se encuentra disponible en [este repositorio de GitHub](https://github.com/aladaspalabras/EEA2019)]"
 author: "Macarena Fernandez Urquiza"
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+    depth: 2
 ---
 
-Importo la librería tidyverse.
+<style type="text/css">
+div.main-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+body {
+text-align: justify}
+</style>
 
-```{r}
+En primer lugar, se importan las librerías con las que se trabajará: tidyverse, data.table, corrr, ggplot2, GGally y hrbtthemes.
+
+```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(data.table, warn.conflicts = FALSE)
+library(data.table)
 library(corrr)
 library(ggplot2)
-library(GGally, warn.conflicts = FALSE)
+library(GGally)
 library(hrbrthemes)
 ```
 
-### 1. Preparación de los datos (I)
 
- - a) Leer el archivo ar_properties.csv y mostrar su estructura
+## 1. Preparación de los datos (I)
 
-Cargo el dataset.
+### 1.1. Carga del dataset
+
+Como primer paso en la preparación de los datos, se procede a cargar el dataset con la función _fread_ de la librerría _data.table_ y se lo asigna a una variable.
+
+A continuación se puede observar que este dataset consta de 388891 registros y 24 columnas.
 
 ```{r}
 dataset = fread("ar_properties.csv")
@@ -27,90 +44,87 @@ dataset = fread("ar_properties.csv")
 dataset
 ```
 
-Muestro la estructura de los datos. 
+Con el fin de conocer un poco mejor su estructura, se emplea la función _summary_ de R base para ver qué tipo de información contiene cada columna.
+
+Aquí se puede apreciar que, de los 24 atributos, 15 contienen información de tipo "caracter"; 8, de tipo "numérico" y uno contiene solamente _missing values_ (l6). 
+
+De aquellos atributos numéricos, se obtienen también las medidas de posición (media, mediana, primer cuartil, tercer cuartil, mínimo y máximo) y la cantidad de datos faltantes (NAs).
 
 ```{r}
 summary(dataset)
 ```
 
-Primero lo hago con la función summary de R base porque me muestra de qué tipo es cada variable y me calcula las medidas de posición y los faltantes de cada una. 
-Pero como veo que hay variables de tipo character también y quiero ver cuáles son sus valores, de manera general, utilizo la función glimpse de la librería Tidyverse. Esta función no me muestra las medidas de posición, pero sí algunos valores y qué tipo de variable es cada una.
+Dado que se observa una gran cantidad de atributos categóricos, se utiliza la función _glimpse_ de la librería Tidyverse, que permite visualizar de modo general qué valores contiene cada atributo
 
 ```{r}
 glimpse(dataset)
 ```
 
-l1: países
-l2: ciudades o localidades
-l3: barrios
-l4: barrios/localidades
-l5: barrios
-currency: moneda
+De lo observado, se puede realizar la siguiente descripción:
 
- - b) Quedarse con aquellos registros que:
-     - Pertenecen a Argentina y Capital Federal
-     - Cuyo precio esta en dólares (USD)
-     - El tipo de propiedad sea: Departamento, PH o Casa
-     - El tipo de operacion sea Venta
+ - id: número de identificación de la propiedad. Atributo nominal.
+ - ad_type: posiblemente tipo de anuncio. Atributo nominal.
+ - start_date: fecha de inicio (del anuncio, posiblemente). Atributo ordinal.
+ - ent_date: fecha de finalización (del anuncio, posiblemente). Atributo ordinal.
+ - created_on: fecha de creación. Atributo ordinal. 
+ - lat: latitud donde se encuentra la propiedad. 
+ - longitud: longitud donde se encuentra la propiedad. Atributo numérico.
+ - l1: país donde se encuentra la propiedad. Atributo nominal.
+ - l2: provincia (si es CABA, se indida "Capital Federal") o región (si es GBA) donde se encuentra la propiedad. Atributo nominal. 
+ - l3: ciudad, partido (si es GBA) o barrio (si es CABA) donde se encuentra la propiedad. Atributo nominal.
+ - l4: barrio (si es GBA) donde se encuentra la propiedad. Atributo nominal.
+ - l5: mayores especificaciones sobre el barrio. Atributo nominal.
+ - l6: NA.
+ - rooms: cantidad de habitaciones que posee la propiedad. Atributo numérico.
+ - bedrooms: cantidad de dormitorios que posee la propiedad. Atributo numérico.
+ - bathrooms: cantidad de baños que posee la propiedad. Atributo numérico.
+ - surface_total: superficie total de la propiedad. Atributo numérico.
+ - surface_covered: superficie cubierta de la propiedad. Atributo numérico.
+ - price: precio de la propiedad. Atributo numérico.
+ - currency: moneda en la cual se expresa el precio. Atributo nominal.
+ - price_period: período que comprende el precio de la propiedad. Atributo nominal.
+ - title: título del anuncio. Atributo nominal.
+ - property_type: tipo de propiedad. Atributo nominal.
+ - operation_type: tipo de operación. Atributo nominal.
 
-La especificación de Argentina debería estar en ly, y la de Capital Federal, en l2, l3 o l4. Chequeo.
+### 1.2. Filtrado del dataset
+
+Dado que solo se trabajará con las propiedades en venta que correspondan a casas, departamentos o PHs que se encuentren ubicados en Capital Federal (Argentina) y cuyo precio se encuentre expresado en dólares (USD), se procede a filtrar del dataset para que muestre los registros deseados.
+
+Para ello se utiliza la función _filter_ del paquete dplyr importado junto a tidyverse.
+
+Asimismo, se emplea la función _select_ del mismo paquete para seleccionar los atributos de interés para este trabajo: id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price y property_type.
+
+Se obtiene una dataset de 61905 registros y 9 atributos. Se lo asigna a una nueva varibale.
 
 ```{r}
-#unique(dataset$l1)
-#unique(dataset$l2)
-#unique(dataset$l3)
-#unique(dataset$l4)
-#unique(dataset$l5)
-
-#unique(dataset$currency)
-
-#unique(dataset$property_type)
-
-#unique(dataset$operation_type)
-```
-
-l1 == Argentina
-l2 == Capital Federal
-currency == USD
-property_type == Departamento PH Casa
-operation_type == Venta
-
-```{r}
-dataset_venta <- dataset %>% 
+dataset_filtrado <- dataset %>% 
   filter(l1 == 'Argentina',
          l2 == 'Capital Federal',
          currency == 'USD',
          property_type %in% c('Departamento','PH','Casa'),
-         operation_type == 'Venta')
-
-dataset_venta
-```
-
- - c) Seleccionar las variables id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price y property_type
-
-```{r}
-dataset_filtrado <- dataset_venta %>% 
+         operation_type == 'Venta') %>% 
   select(id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price, property_type)
 
 dataset_filtrado
 ```
 
-Deberían llegar a un dataset con 61905 observaciones y 9 variables => ÉXITOS
+## 2. Análisis exploratorio (I) {#analisisi}
 
-### 2. Analisis exploratorios (I)
+### 2.1. Valores únicos y faltantes
 
- - a) Obtener la cantidad de valores únicos y de valores faltantes (NAs) para cada una de estas variables
+En un primer análisis exploratorio, se verifica la cantidad de valores faltanres y de valores únicos en cada atributo.
 
-Cantidad de valores únicos por variable:
+Para obtener la cantidad de valores únicos se utiliza la función *summarise_all* de paquete dplyr que permite aplicar una misma función a todas las columnas del dataset. En este caso, se le aplica la función *n_distinct* que devuelve la cantidad de valores distintos en cada atributo.
 
 ```{r}
 unique_values <- dataset_filtrado %>% 
-  summarise_all(n_distinct) #de dplyr
+  summarise_all(n_distinct)
 
 unique_values
 ```
 
-Cantidad de valores faltantes por variable:
+En el caso de los valores faltantes, se aplica la función _is.na_ de R base sobre el dataset filtrado para obtener una máscara booleana que inddica si en cada celda hay un NA o no. Luego, por columna, se suman las filas que sí tienen un NA (que resultaron TRUE para la función aplicada). Para una mejor visualización, se transpone la información obtenida y se la muestra en un data frame.
 
 ```{r}
 na_values <- dataset_filtrado %>% 
@@ -122,7 +136,11 @@ na_values <- dataset_filtrado %>%
 na_values
 ```
 
- - b) Obtener la matriz de correlacion para las variables numéricas. Pista: usen ‘complete.obs’ para poder omitir los valores faltantes.
+### 2.2. Correlación entre variables
+
+Con el propósito de cotejar si existe alguna correlación entre la variables numéricas, se realiza una matriz de correlación de las mismas y se la grafica con la función _rplot_ del paquete ggplot2.
+
+Para calcular la correlación se utiliza el coeficiente de correlación de Pearson y se toman en cuenta solamente los registros completos. Esto último se realiza mediante el parámetro "complete.obs".
 
 ```{r}
 dataset_filtrado %>% 
@@ -139,35 +157,35 @@ dataset_filtrado %>%
   rplot(colours = c('#003366','#3399FF','#FF3300')) +
   geom_point(size=5) +
   labs(title = 'Correlograma de variables') +
-  theme_minimal()
-
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
 help(rplot)
 ```
 
-### 3. Preparacion de los datos (II)
+## 3. Preparacion de los datos (II) {#preparacionii}
 
- - a) En el punto 2 deberían haber encontrado que la variable bedrooms presenta una alta proporción de valores faltantes y que presenta una fuerte correlación con la variable rooms. Por lo tanto, vamos a eliminarla.
+El análisis exploratorio realizado en [el apartado anterior](#analisisi) se halló que las variables _bedrooms_ y _rooms_ presentan una alta correlacionadas positiva (con un valor de 0.92). Esto significa que cuando los valores de una aumentan, los de la otra también lo hacen. De este modo, la información que ofrecen es, en cierto sentido, redundante. Esto permite optar por remover una de dichas variables.
 
-```{r}
-dataset_sin_bedrooms <- dataset_filtrado %>% 
-  select(-c(bedrooms))
+Debido a que _bedrooms_ demostró tener gran cantidad de valores faltantes, se quita esta variable del dataset.
 
-dataset_sin_bedrooms
-```
+Para no tener mayores inconvenientes con el resto de los registros, se decide asimismo quitar aquellos que contengan valores faltantes, preservando solamente los registros completos.
 
- - b) Eliminar todos los registros que presentan valores faltantes
+Como resultado, se obtiene un dataset con 8 variables y 51210 registros.
 
 ```{r}
-dataset_sin_NA <- dataset_sin_bedrooms %>% 
+dataset_sin_NA <- dataset_filtrado %>% 
+  select(-c(bedrooms)) %>% 
   na.omit()
 
 dataset_sin_NA
 ```
 
-Deberían llegar a un dataset con 51210 observaciones y 8 variables => ÉXITO
+## 4.Análisis exploratorio (II)
 
-### 4.Analisis exploratorios (II)
+Se realiza un nuevo análisis exploratorio, ahora sobre la variable _price_(precio) del dataset sin faltantes, obtenido en [la sección 3](#preparacionii).
 
+Tambié se grafica un nuevo correlograma con las variables actuales.
+
+### 4.1. Medidas de posición y dispersión
  - a) Obtener estadísticas descriptivas para la variable precio (cuartiles, promedio, mínimo y máximo) y realizar un histograma de la variable.
  
 ```{r}
@@ -175,6 +193,8 @@ dataset_sin_NA %>%
   select(price) %>% 
   summary()
 ```
+
+### 4.2. Gráficos
 
 
 ```{r}
@@ -317,7 +337,7 @@ dataset_sin_outliers2 <- dataset_sin_NA %>%
 ```
 
 
-## 6. Analisis exploratorios (III)
+## 6. Análisis exploratorios (III)
 
  - Repetir los 4 análisis exploratorios realizados en el punto 4 y realizar unos breves comentarios sobre los cambios que encontraron.
 
