@@ -1,5 +1,5 @@
 ---
-title: "Trabajo Práctico N°1 ^[El código exhibido en este trabajo se encuentra disponible en [este repositorio de GitHub](https://github.com/aladaspalabras/EEA2019)]"
+title: "Trabajo Práctico N°1"
 author: "Macarena Fernandez Urquiza"
 output: 
   html_notebook:
@@ -16,7 +16,17 @@ div.main-container {
 }
 body {
 text-align: justify}
+h3{
+  font-size: 18pt
+}
+h5{
+  font-size: 10pt;
+}
 </style>
+
+##### El código exhibido en este trabajo se encuentra disponible [aquí](https://github.com/aladaspalabras/EEA2019/tree/master/EEA-TPs/TP01)
+
+<br/>
 
 En primer lugar, se importan las librerías con las que se trabajará: tidyverse, data.table, corrr, ggplot2, GGally y hrbtthemes.
 
@@ -29,8 +39,7 @@ library(GGally)
 library(hrbrthemes)
 ```
 
-
-## 1. Preparación de los datos (I)
+## 1. Preparación de los datos I
 
 ### 1.1. Carga del dataset
 
@@ -109,7 +118,7 @@ dataset_filtrado <- dataset %>%
 dataset_filtrado
 ```
 
-## 2. Análisis exploratorio (I) {#analisisi}
+## 2. Análisis exploratorio I {#analisisi}
 
 ### 2.1. Valores únicos y faltantes
 
@@ -161,7 +170,7 @@ dataset_filtrado %>%
 help(rplot)
 ```
 
-## 3. Preparacion de los datos (II) {#preparacionii}
+## 3. Preparacion de los datos II {#preparacionii}
 
 El análisis exploratorio realizado en [el apartado anterior](#analisisi) se halló que las variables _bedrooms_ y _rooms_ presentan una alta correlacionadas positiva (con un valor de 0.92). Esto significa que cuando los valores de una aumentan, los de la otra también lo hacen. De este modo, la información que ofrecen es, en cierto sentido, redundante. Esto permite optar por remover una de dichas variables.
 
@@ -179,7 +188,7 @@ dataset_sin_NA <- dataset_filtrado %>%
 dataset_sin_NA
 ```
 
-## 4.Análisis exploratorio (II)
+## 4.Análisis exploratorio II
 
 Se realiza un nuevo análisis exploratorio, ahora sobre la variable _price_(precio) del dataset sin faltantes, obtenido en [la sección 3](#preparacionii).
 
@@ -337,7 +346,7 @@ dataset_sin_outliers2 <- dataset_sin_NA %>%
 ```
 
 
-## 6. Análisis exploratorios (III)
+## 6. Análisis exploratorios III
 
  - Repetir los 4 análisis exploratorios realizados en el punto 4 y realizar unos breves comentarios sobre los cambios que encontraron.
 
