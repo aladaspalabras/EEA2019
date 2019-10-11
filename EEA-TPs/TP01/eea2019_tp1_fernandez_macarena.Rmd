@@ -70,13 +70,13 @@ De aquellos atributos numéricos, se obtienen también las medidas de posición 
 summary(dataset)
 ```
 
-Dado que se observa una gran cantidad de atributos categóricos, se utiliza la función _glimpse_ de la librería _Tidyverse_, que permite visualizar de modo general qué valores contiene cada atributo
+Dado que se observa una gran cantidad de atributos categóricos, se utiliza la función _glimpse_ de la librería _tidyverse_, que permite visualizar de modo general qué valores contiene cada atributo
 
 ```{r}
 glimpse(dataset)
 ```
 
-De lo observado, se puede realizar la siguiente descripción:
+De lo observado, se puede realizar la siguiente descripción de cada atributo:
 
  - id: número de identificación de la propiedad. Atributo nominal.
  - ad_type: posiblemente tipo de anuncio. Atributo nominal.
@@ -90,7 +90,7 @@ De lo observado, se puede realizar la siguiente descripción:
  - l3: ciudad, partido (si es GBA) o barrio (si es CABA) donde se encuentra la propiedad. Atributo nominal.
  - l4: barrio (si es GBA) donde se encuentra la propiedad. Atributo nominal.
  - l5: mayores especificaciones sobre el barrio. Atributo nominal.
- - l6: NA.
+ - l6: atributo con valores faltantes únicamente.
  - rooms: cantidad de habitaciones que posee la propiedad. Atributo numérico.
  - bedrooms: cantidad de dormitorios que posee la propiedad. Atributo numérico.
  - bathrooms: cantidad de baños que posee la propiedad. Atributo numérico.
@@ -105,13 +105,13 @@ De lo observado, se puede realizar la siguiente descripción:
 
 ## 1.2. Filtrado del dataset
 
-Dado que solo se trabajará con las propiedades en venta que correspondan a casas, departamentos o PHs que se encuentren ubicados en Capital Federal (Argentina) y cuyo precio se encuentre expresado en dólares (USD), se procede a filtrar del dataset para que muestre los registros deseados.
+Dado que solo se trabajará con las propiedades en venta que correspondan a casas, departamentos o PHs que se encuentren ubicados en Capital Federal (Argentina) y cuyo precio se exprese en dólares (USD), se procede a filtrar del dataset para que muestre los registros deseados.
 
 Para ello se utiliza la función _filter_ del paquete _dplyr_ importado junto a _tidyverse_.
 
 Asimismo, se emplea la función _select_ del mismo paquete para seleccionar los atributos de interés para este trabajo: id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price y property_type.
 
-Se obtiene una dataset de 61905 registros y 9 atributos. Se lo asigna a una nueva varibale.
+Se obtiene una dataset de 61905 registros y 9 atributos y se lo asigna a una nueva varibale.
 
 ```{r}
 dataset_filtrado <- dataset %>% 
@@ -129,7 +129,7 @@ dataset_filtrado
 
 ## 2.1. Valores únicos y faltantes
 
-En un primer análisis exploratorio, se verifica la cantidad de valores faltanres y de valores únicos en cada atributo.
+En un primer análisis exploratorio, se verifica la cantidad de valores faltantes y de valores únicos en cada atributo.
 
 Para obtener la cantidad de valores únicos se utiliza la función *summarise_all* de paquete _dplyr_ que permite aplicar una misma función a todas las columnas del dataset. En este caso, se le aplica la función *n_distinct* que devuelve la cantidad de valores distintos en cada atributo.
 
@@ -140,7 +140,7 @@ unique_values <- dataset_filtrado %>%
 unique_values
 ```
 
-En el caso de los valores faltantes, se aplica la función _is.na_ de R base sobre el dataset filtrado para obtener una máscara booleana que inddica si en cada celda hay un NA o no. Luego, por columna, se suman las filas que sí tienen un NA (que resultaron TRUE para la función aplicada). Para una mejor visualización, se transpone la información obtenida y se la muestra en un data frame.
+En el caso de los valores faltantes, se aplica la función _is.na_ de R base sobre el dataset filtrado para obtener una máscara booleana que indique si en cada celda hay un NA o no. Luego, por columna, se suman las filas que sí tienen un NA (que resultaron TRUE para la función aplicada). Para una mejor visualización, se transpone la información obtenida y se la muestra en un data frame.
 
 ```{r}
 na_values <- dataset_filtrado %>% 
@@ -178,9 +178,7 @@ dataset_filtrado %>%
 
 # 3. Preparacion de los datos II {#preparacionii}
 
-El análisis exploratorio realizado en [el apartado anterior](#analisisi) se halló que las variables _dormitorios_ (bedrooms) y _habitaciones_ (rooms) presentan una alta correlacionadas positiva (con un valor de 0.92). Esto significa que cuando los valores de una aumentan, los de la otra también lo hacen. De este modo, la información que ofrecen es, en cierto sentido, redundante. Esto permite optar por remover una de dichas variables.
-
-Debido a que _dormitorios_ demostró tener gran cantidad de valores faltantes, se quita esta variable del dataset.
+El análisis exploratorio realizado en [el apartado anterior](#analisisi) se halló que las variables _dormitorios_ (bedrooms) y _habitaciones_ (rooms) presentan una alta correlacionadas positiva (con un valor de 0.92). Esto significa que cuando los valores de una aumentan, los de la otra también lo hacen. De este modo, la información que ofrecen es, en cierto sentido, redundante. Esto permite optar por remover una de dichas variables y, debido a que _dormitorios_ demostró tener gran cantidad de valores faltantes, se quita esta variable del dataset.
 
 Para no tener mayores inconvenientes con el resto de los registros, se decide asimismo quitar aquellos que contengan valores faltantes, preservando solamente los registros completos.
 
@@ -263,7 +261,7 @@ dataset_sin_NA %>%
 
 De estas medidas se puede extraer que el tipo de propiedad Departamento es el que presenta el mayor rango de valores y el tipo de propiedad PH, el menor.
 
-De hecho, si bien el tipos de propiedad Departamento muestra una media y una mediana similares a las del tipo de propiedad PH, dado que también evidencia un rango considerablemente mayor, es de esperarcon las colas de su distribución sean más livianas que las de la distribución del tipo de propiedad PH.
+De hecho, si bien el tipo de propiedad Departamento muestra una media y una mediana similares a las del tipo de propiedad PH, dado que también evidencia un rango considerablemente mayor, es de esperar que las colas de su distribución sean más livianas que las de la distribución del tipo de propiedad PH.
 
 El tipo de propiedad Casa, por su parte, posee una media y una mediana mayor a las de ambos atributos ya mencionados.
 
@@ -302,7 +300,7 @@ dataset_sin_NA %>%
   labs(title = "Propiedades en venta en CABA - Correlograma")
 ```
 
-Este gráfico muestra una fuerte correlación positiva entre la variable _superficie cubierta_ (surface_covered) y _superficie total_ (surface_total), algo esperable desde el sentido común en las propiedades de Capital Federal dado que muchas veces ambas superficies coinciden y cuando no lo hacen es infrecuente que se deba a que la propiedad tiene una superficie descubierta mayor que la cubierta (caso en el que la superficie total aumentaría pero la superficie cubierta no).
+Este gráfico muestra una fuerte correlación positiva entre la variable _superficie cubierta_ (surface_covered) y _superficie total_ (surface_total). Desde el sentido común, esto resulta esperable en las propiedades de Capital Federal, dado que muchas veces ambas superficies coinciden y, cuando no lo hacen, es infrecuente que se deba a que la propiedad tiene una superficie descubierta mayor que la cubierta (caso en el que la superficie total aumentaría pero la superficie cubierta no).
 
 También resulta esperable la correlación observada entre _habitaciones_ y _baños_ (bathrooms), pues suele ocurrir que, a medida que la primera aumenta, la segunda también lo hace.
 
@@ -310,7 +308,7 @@ Quizá sí pueda ser curioso el hecho de que, si bien estas útimas dos variable
 
 # 5. Outliers
 
-En vistas de la alta dispersión observada en la variable _precio_, se propone remover los valores atípicos.
+En vistas del amplio rango de la variable _precio_, se propone remover los valores atípicos.
 
 Para ello, se ordenan los datos de manera creciente y se los grafica en un scatterplot con el fin de encontrar si existe algún punto de corte a partir del cual se observen outliers.
  
@@ -364,7 +362,7 @@ dataset_sin_outliers %>%
   summary()
 ```
 
-Se observa que el valor mínimo se mantiene, mientras que el máximo ha disminuido considerablemente y hasta un valor que presenta la misma cantidad de dígitos que la media.
+Se observa que el valor mínimo se mantiene, mientras que el máximo ha disminuido considerablemente hasta un valor que presenta la misma cantidad de dígitos que la media.
 
 Asimismo, la media y la mediana se han aproximado. Sin embargo, en tanto la primera constinúa siendo mayor que la segunda, cabe esperar que la distribución de la variable siga siendo asimétrica a derecha. Se confirma esto con un nuevo histograma.
 
@@ -407,11 +405,11 @@ dataset_sin_outliers %>%
             máx = max(price))
 ```
 
-Si bien persiste el hecho de que el tipo de propiedad Departamento presente el mayor rango entre sus valores, ahora los tres tipos de propiedad exhiben valores máximos muy similares. Esto era esperable dada la remoción previa de valores atípicos, en la cual se estableció una cota superior e inferior y se filtraros los valores por encima y por debajo respectivamente. En tanto no existían valores menores a la cota inferior, el mínimo se mantuvo. EL máximo, en cambio, se vio reducido al límite superior establecido.
+Si bien persiste el hecho de que el tipo de propiedad Departamento presente el mayor rango entre sus valores, ahora los tres tipos de propiedad exhiben valores máximos muy similares. Esto era esperable dada la remoción previa de valores atípicos, en la cual se estableció una cota superior e inferior y se filtraron los valores por encima y por debajo respectivamente. En tanto no existían valores menores a la cota inferior, el mínimo se mantuvo. El máximo, en cambio, se vio reducido al límite superior establecido.
 
 La media y  la mediana del tipo de propiedad Departamento sigue siendo similar a las del tipo de propiedad PH aunque en ambos casos las distancias entre estas dos medidas se ha acortado.
 
-Esto también ha ocurrido con la media y la mediana del tipo de propiedad Casa, donde ambas medidas se han aproximado en mayor medida. Si se agrega a este dato el hecho de que, como producto de la poda de outliers, este grupo presente menor dispersión, se podría suponer que su distribución ya no debería se asimétrica o, al menos, no de forma tan marcada.
+Esto también ha ocurrido con la media y la mediana del tipo de propiedad Casa, donde ambas medidas se han aproximado de manera más notable. Si se agrega a este dato el hecho de que, como producto de la poda de outliers, este grupo presente menor dispersión, se podría suponer que su distribución ya no debería se asimétrica o, al menos, no de forma tan marcada.
 
 Se cotejan estos supuestos con un nuevo boxplot. Igual que se hizo anteriormente, se convierten los valores de la variable _tipo de propiedad_ en factores para poder realizar el gráfico.
 
@@ -459,10 +457,19 @@ Ahora, además de haber modificado sus órdenes, esta últimas tres correlacione
 
 ## 7.1. Modelos lineales
 
+Se realizan dos modelos lineales con el fin de poder predecir el precio en función de otra variable.
+
 ### 7.1.1. Modelo 1: el precio en función de las habitaciones
 
-modelo lineal simple para explicar el precio en función de las habitaciones (rooms)
+En este primer modelo, se busca explicar el precio en función de la variable _habitaciones_ (rooms). 
+Primero se seleccionan los atributos a utilizar y luego se ajusta el modelo. 
+
+Mediante la función _summary_ se extraen los coficientes estimados para la recta generada por el modelo:
  
+ - 57218.9: es la ordenada al origen. Este valor indica el precio esperado cuando se toma en consideración el promedio de la variable _habitaciones_ de todas las propiedades del dataset.
+ - 49561.7: el la pendiente de la recta. Indica cuánto aumenta la varible target (en este caso, el precio) por cada unidad que aumenta la variable independiente (es decir, la cantidad de habitaciones).
+
+
 ```{r}
 data.model1 <- dataset_sin_outliers %>% 
   select(price, rooms)
@@ -474,7 +481,13 @@ summary(mod1)
 
 ### 7.1.2. Modelo 2: el precio en función de la superficie total
 
-modelo que explique el precio en función de la superficie total (surface_total)
+En un segundo modelo, se busca explicar el precio en función de la variable _superficie total_ (surface_total). 
+Nuevamente, se seleccionan los atributos a utilizar y luego se ajusta el modelo. 
+
+Del mismo modo que se hizo anteriormente, se extraen los coficientes estimados:
+
+ - 1.872e+05: es la ordenada al origen de la recta generada. Expresa el precio de una propiedad con una superficie total promedio.
+ - 5.058e+00: es la pendiente del modelo e indica cuánto aumenta el precio confome aumenta la superficie total de la propiedad.
  
 ```{r}
 data.model2 <- dataset_sin_outliers %>% 
@@ -482,18 +495,15 @@ data.model2 <- dataset_sin_outliers %>%
 
 mod2 <- lm(price ~ surface_total, data = data.model2)
 
-coef(mod2)
 summary(mod2)
 ```
 
-Intercept Estimate: ordenada al origen
-
-surface_total Estimate: pendiente
-
-explicar coeficientes estimados
-
-https://biologyforfun.wordpress.com/2014/11/23/interpreting-regression-coefficient-in-r/
-
 ## 7.2. Selección del modelo
 
-precio en función de la superficie total
+De los modelos anteriormente ajustado, el modelo 1, que intenta explicar el precio de una propiedad en función de la cantidad de habitaciones que posee, parece ser el más adecuado. 
+
+Si bien ninguno de los modelos exhibe un residuo con una mediana 0 o cercana a 0, lo que sería deseable puesto que eso significa que la diferencia entre los datos observados y los predichos presenta una distribución simétrica y da cuenta de cuánto se ajusta el modelo a los datos, la mediana de los residuos del modelo 1 presenta una menor distancia al 0 que la mediana del modelo 2.
+
+Además, aunque los desvíos estándares de los coeficientes del primer modelo son mayores en términos absolutos, cuando se los relaciona con los coeficientes estimados, resultan valores proporcionalmente menores a los exhibidos por el modelo 2.
+
+Por último, el t valor observado entre la variable _habitaciones_ y _precio_ es mayor que el que existe entre _superficie total_ y _precio_, sugiriendo que la primera relación es más estrecha.
