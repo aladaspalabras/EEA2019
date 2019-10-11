@@ -5,7 +5,7 @@ output:
   html_notebook:
     toc: true
     toc_float: true
-    depth: 2
+    depth: 3
 ---
 
 <style type="text/css">
@@ -16,19 +16,25 @@ div.main-container {
 }
 body {
 text-align: justify}
+h1{
+  font-size: 19pt
+}
+h2{
+  font-size: 17pt
+}
 h3{
-  font-size: 18pt
+  font-size: 15pt
 }
 h5{
   font-size: 10pt;
 }
 </style>
 
-##### El código exhibido en este trabajo se encuentra disponible [aquí](https://github.com/aladaspalabras/EEA2019/tree/master/EEA-TPs/TP01)
+##### El código fuente de este trabajo se encuentra disponible [aquí](https://github.com/aladaspalabras/EEA2019/tree/master/EEA-TPs/TP01)
 
 <br/>
 
-En primer lugar, se importan las librerías con las que se trabajará: tidyverse, data.table, corrr, ggplot2, GGally y hrbtthemes.
+En primer lugar, se importan las librerías con las que se trabajará: _tidyverse, data.table, corrr, ggplot2, GGally y hrbtthemes_.
 
 ```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -37,11 +43,12 @@ library(corrr)
 library(ggplot2)
 library(GGally)
 library(hrbrthemes)
+library(modelr)
 ```
 
-## 1. Preparación de los datos I
+# 1. Preparación de los datos I
 
-### 1.1. Carga del dataset
+## 1.1. Carga del dataset
 
 Como primer paso en la preparación de los datos, se procede a cargar el dataset con la función _fread_ de la librerría _data.table_ y se lo asigna a una variable.
 
@@ -63,7 +70,7 @@ De aquellos atributos numéricos, se obtienen también las medidas de posición 
 summary(dataset)
 ```
 
-Dado que se observa una gran cantidad de atributos categóricos, se utiliza la función _glimpse_ de la librería Tidyverse, que permite visualizar de modo general qué valores contiene cada atributo
+Dado que se observa una gran cantidad de atributos categóricos, se utiliza la función _glimpse_ de la librería _Tidyverse_, que permite visualizar de modo general qué valores contiene cada atributo
 
 ```{r}
 glimpse(dataset)
@@ -96,11 +103,11 @@ De lo observado, se puede realizar la siguiente descripción:
  - property_type: tipo de propiedad. Atributo nominal.
  - operation_type: tipo de operación. Atributo nominal.
 
-### 1.2. Filtrado del dataset
+## 1.2. Filtrado del dataset
 
 Dado que solo se trabajará con las propiedades en venta que correspondan a casas, departamentos o PHs que se encuentren ubicados en Capital Federal (Argentina) y cuyo precio se encuentre expresado en dólares (USD), se procede a filtrar del dataset para que muestre los registros deseados.
 
-Para ello se utiliza la función _filter_ del paquete dplyr importado junto a tidyverse.
+Para ello se utiliza la función _filter_ del paquete _dplyr_ importado junto a _tidyverse_.
 
 Asimismo, se emplea la función _select_ del mismo paquete para seleccionar los atributos de interés para este trabajo: id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price y property_type.
 
@@ -118,13 +125,13 @@ dataset_filtrado <- dataset %>%
 dataset_filtrado
 ```
 
-## 2. Análisis exploratorio I {#analisisi}
+# 2. Análisis exploratorio I {#analisisi}
 
-### 2.1. Valores únicos y faltantes
+## 2.1. Valores únicos y faltantes
 
 En un primer análisis exploratorio, se verifica la cantidad de valores faltanres y de valores únicos en cada atributo.
 
-Para obtener la cantidad de valores únicos se utiliza la función *summarise_all* de paquete dplyr que permite aplicar una misma función a todas las columnas del dataset. En este caso, se le aplica la función *n_distinct* que devuelve la cantidad de valores distintos en cada atributo.
+Para obtener la cantidad de valores únicos se utiliza la función *summarise_all* de paquete _dplyr_ que permite aplicar una misma función a todas las columnas del dataset. En este caso, se le aplica la función *n_distinct* que devuelve la cantidad de valores distintos en cada atributo.
 
 ```{r}
 unique_values <- dataset_filtrado %>% 
@@ -145,9 +152,9 @@ na_values <- dataset_filtrado %>%
 na_values
 ```
 
-### 2.2. Correlación entre variables
+## 2.2. Correlación entre variables
 
-Con el propósito de cotejar si existe alguna correlación entre la variables numéricas, se realiza una matriz de correlación de las mismas y se la grafica con la función _rplot_ del paquete ggplot2.
+Con el propósito de cotejar si existe alguna correlación entre la variables numéricas, se realiza una matriz de correlación de las mismas y se la grafica con la función _rplot_ del paquete _ggplot2_.
 
 Para calcular la correlación se utiliza el coeficiente de correlación de Pearson y se toman en cuenta solamente los registros completos. Esto último se realiza mediante el parámetro "complete.obs".
 
@@ -167,14 +174,13 @@ dataset_filtrado %>%
   geom_point(size=5) +
   labs(title = 'Correlograma de variables') +
   theme(axis.text.x = element_text(angle = 45, hjust=1))
-help(rplot)
 ```
 
-## 3. Preparacion de los datos II {#preparacionii}
+# 3. Preparacion de los datos II {#preparacionii}
 
-El análisis exploratorio realizado en [el apartado anterior](#analisisi) se halló que las variables _bedrooms_ y _rooms_ presentan una alta correlacionadas positiva (con un valor de 0.92). Esto significa que cuando los valores de una aumentan, los de la otra también lo hacen. De este modo, la información que ofrecen es, en cierto sentido, redundante. Esto permite optar por remover una de dichas variables.
+El análisis exploratorio realizado en [el apartado anterior](#analisisi) se halló que las variables _dormitorios_ (bedrooms) y _habitaciones_ (rooms) presentan una alta correlacionadas positiva (con un valor de 0.92). Esto significa que cuando los valores de una aumentan, los de la otra también lo hacen. De este modo, la información que ofrecen es, en cierto sentido, redundante. Esto permite optar por remover una de dichas variables.
 
-Debido a que _bedrooms_ demostró tener gran cantidad de valores faltantes, se quita esta variable del dataset.
+Debido a que _dormitorios_ demostró tener gran cantidad de valores faltantes, se quita esta variable del dataset.
 
 Para no tener mayores inconvenientes con el resto de los registros, se decide asimismo quitar aquellos que contengan valores faltantes, preservando solamente los registros completos.
 
@@ -188,26 +194,33 @@ dataset_sin_NA <- dataset_filtrado %>%
 dataset_sin_NA
 ```
 
-## 4.Análisis exploratorio II
+# 4.Análisis exploratorio II {#analisisii}
 
-Se realiza un nuevo análisis exploratorio, ahora sobre la variable _price_(precio) del dataset sin faltantes, obtenido en [la sección 3](#preparacionii).
+Se realiza un nuevo análisis exploratorio, ahora utilizando el dataset sin faltantes, obtenido en [la sección 3](#preparacionii). 
 
-Tambié se grafica un nuevo correlograma con las variables actuales.
+A continuación, se ofrece una exploración más detallada sobre la variable _precio_ (price) y su relación con el atributo _tipo de propiedad_ (property_type).
 
-### 4.1. Medidas de posición y dispersión
- - a) Obtener estadísticas descriptivas para la variable precio (cuartiles, promedio, mínimo y máximo) y realizar un histograma de la variable.
- 
+Asimismo, se realiza un nuevo correlograma con el dataset sin faltantes.
+
+## 4.1. Medidas de posición de la variable _precio_
+
+Mediante la función _summary_ se obtienen las medidad de posición de la variable _precio_. 
+
+Aquí, se ve que su valores pueden tomar un máximo de 6000000 y un mínimo de 6000 o, lo que es lo mismo, que su rango es de 5994000. 
+
+Los cuartiles son 119000 (primer cuartil) y 270000 (tercer cuartil), lo que indica una distancia intercuartil de 151000.
+
+Y se observa una media de 251577 y una mediana de 170000. Es decir que la media es mayor que la mediana, lo que nos hace suponer una distribución asimétrica a derecha.
+
 ```{r}
 dataset_sin_NA %>% 
   select(price) %>% 
   summary()
 ```
 
-### 4.2. Gráficos
-
+Se realiza un histograma que permita visualizar más claramente esta información.
 
 ```{r}
-# basic histogram
 dataset_sin_NA %>% 
   ggplot(aes(x=price)) + 
   geom_histogram(fill="#69b3a2", color="#e9ecef", bins = 227, binwidth = 26429) + 
@@ -218,47 +231,61 @@ dataset_sin_NA %>%
   theme_minimal()
 ```
 
+Como se anticipó, la variable presenta una distribución asimétrica a derecha. 
+
+Se realiza además un conteo de frecunecia relativa y frecuencia relativa acumulada con el fin de verificar los datos del gráfico. Como resultado, se encuentra que el 50% de los registros se concentra en apenas el 2% de los valores observados, y que la mayoría de estos valores se encuentran por debajo de los 350000.
+
 ```{r}
-count(dataset_sin_NA, price) %>% 
+frec <- count(dataset_sin_NA, price) %>% 
   mutate(frec = n/nrow(dataset_sin_NA)*100) %>% 
   arrange(desc(frec)) %>% 
-  mutate(frec_acum = cumsum(frec))
+  mutate(frec_acum = cumsum(frec),
+         id = 1:nrow(.)) %>% 
+  select(id, everything())
+
+frec
 ```
 
+## 4.2. Relación con la variable _tipo de propiedad_
 
- - b) Obtener estadísticas descriptivas para la variable precio (cuartiles, promedio, mínimo y máximo) por cada tipo de propiedad.
+En vistas de amplio rango de precios observado, se busca obtener métricas de posición de esta variable agrupándola por tipo de propiedad para verificar si existe algún patrón relacionado.
  
 ```{r}
 dataset_sin_NA %>% 
   group_by(property_type) %>% 
-  summarise(Q1 = quantile(x = price, probs = 0.25, names = FALSE), 
+  summarise(mín = min(price), 
+            Q1 = quantile(x = price, probs = 0.25, names = FALSE), 
+            mediana = median(price),
+            media = mean(price), 
             Q3 = quantile(x = price, probs = 0.75, names = FALSE), 
-            promedio = mean(price), 
-            mín = min(price), 
             máx = max(price))
 ```
 
- - c) Realizar un gráfico de boxplot de la variable precio por tipo de propiedad.
+De estas medidas se puede extraer que el tipo de propiedad Departamento es el que presenta el mayor rango de valores y el tipo de propiedad PH, el menor.
 
-Primero cambio las variables nominales a numerales discretas.
+De hecho, si bien el tipos de propiedad Departamento muestra una media y una mediana similares a las del tipo de propiedad PH, dado que también evidencia un rango considerablemente mayor, es de esperarcon las colas de su distribución sean más livianas que las de la distribución del tipo de propiedad PH.
+
+El tipo de propiedad Casa, por su parte, posee una media y una mediana mayor a las de ambos atributos ya mencionados.
+
+A continuación, se grafica un boxplot que facilite la visualización de estos datos. Previamente, se convierten los valores de la variable _tipo de propiedad_ en factores.
 
 ```{r}
 ggdata <- dataset_sin_NA %>% 
-  mutate(id = as.factor(id),
-         l3 = as.factor(l3),
-         property_type = as.factor(property_type))
+  select(property_type, price) %>% 
+  mutate(property_type = as.factor(property_type))
 
 ggplot(ggdata, aes(x = property_type, y = price, group = property_type, fill = property_type)) +
   geom_boxplot() +
   labs(title='Precio por tipo de propiedad',
        x = 'Tipos de propiedad',
        y = 'Precio (USD)')
-
-# El boxplot no es una buena indicación de outliers
-#scale_y_continuous(limits = c(5000, 2000000))
 ```
 
- - d) Realizar un correlagrama usando GGAlly.
+Si bien el boxplot confirma las suposiciones anteriores, también muestra que no es posible utilizarlo para encontrar valores atípicos, dado que hay una gran cantidad de datos que caen por fuera de los bigotes y que no se encuentran aislados o separados del resto.
+
+## 4.3. Relación entre variables
+
+Se realiza un nuevo correlograma de variable con el dataset sin datos faltantes. Esta vez se utiliza la función _ggcorr_ de la librería _GGAlly_.
 
 ```{r}
 dataset_sin_NA %>% 
@@ -275,24 +302,61 @@ dataset_sin_NA %>%
   labs(title = "Propiedades en venta en CABA - Correlograma")
 ```
 
-## 5. Outliers
+Este gráfico muestra una fuerte correlación positiva entre la variable _superficie cubierta_ (surface_covered) y _superficie total_ (surface_total), algo esperable desde el sentido común en las propiedades de Capital Federal dado que muchas veces ambas superficies coinciden y cuando no lo hacen es infrecuente que se deba a que la propiedad tiene una superficie descubierta mayor que la cubierta (caso en el que la superficie total aumentaría pero la superficie cubierta no).
 
- - Eliminar los outliers de la variable precio con algún criterio que elijan: puede ser por valores de corte, eliminar el x% a izquierda y derecha,etc.
+También resulta esperable la correlación observada entre _habitaciones_ y _baños_ (bathrooms), pues suele ocurrir que, a medida que la primera aumenta, la segunda también lo hace.
+
+Quizá sí pueda ser curioso el hecho de que, si bien estas útimas dos variables se correlacionan de manera semejante con el precio, la cantidad de baños exhibe, aunque muy leve, una mayor correlación, dando lugar a la sospecha de que la cantidad de baños aumenta en mayor medida la cotizaicón de una propiedad (en comparación con la cantidad de habitaciones).
+
+# 5. Outliers
+
+En vistas de la alta dispersión observada en la variable _precio_, se propone remover los valores atípicos.
+
+Para ello, se ordenan los datos de manera creciente y se los grafica en un scatterplot con el fin de encontrar si existe algún punto de corte a partir del cual se observen outliers.
  
 ```{r}
 sort(dataset_sin_NA$price, decreasing = FALSE) %>% 
   plot(main = "Scatterplot de precios",
+       xlab = "Índice",
        ylab = "Precios",
        col = "#43a2ca")
 ```
 
+Si bien no parece haber un punto de corte claro, se intenta estableciendo el límite en 3000000, se filtran todos los precios menores a ese valor y se obtienen nuevas medidas de posición para evaluar el impacto de esta decisión.
+
 ```{r}
-# OPCIÓN #1
-
-dataset_sin_outliers <- dataset_sin_NA %>%
-  filter(price < 3500000)
-
+dataset_sin_NA %>%
+  filter(price < 3000000) %>% 
+  select(price) %>% 
+  summary()
 ```
+
+Aunque el rango de los valores obtenidos es menor, aún se observa una alta variación entre un extremo y otro. Se propone entonces eliminar los valores que se encuentren a 1.5 rangos intercuartiles del primer y tercer cuartil.
+
+Para esto se buscan primero el rango intercuartil y los cuartiles de _precios_ y se los asignado a una variable. Luego, se establece como corte mínimo el punto que se ubica a 1.5 veces el rango intercuartil por debajo del primer cuartil, y se hace lo mismo con el corte máximo, solo que ubicándolo por encima del tercer cuartil. Finalmente, se filtra el dataset y se almacenan solamente los registros cuyo precio esté por encima del corte mínimo y por debajo del corte máximo.
+
+```{r}
+data.riq <- IQR(dataset_sin_NA$price)
+
+cuantiles<-quantile(dataset_sin_NA$price, c(0.25, 0.5, 0.75), type = 7)
+
+outliers_min<-as.numeric(cuantiles[1])-1.5*data.riq
+outliers_max<-as.numeric(cuantiles[3])+1.5*data.riq
+
+dataset_sin_outliers <- dataset_sin_NA %>% 
+  filter(price > outliers_min,
+         price < outliers_max)
+
+dataset_sin_outliers
+```
+
+# 6. Análisis exploratorios III
+
+Se procede a realizar el mismo análisis desarrollado en el [apartado 4](#analisisii) pero utilizando el dataset sin faltantes y sin valores atípicos.
+
+## 6.1. Medidas de posición de la variable _precio_
+
+Se calculan nuevamente las medidas de posición. 
 
 ```{r}
 dataset_sin_outliers %>% 
@@ -300,105 +364,75 @@ dataset_sin_outliers %>%
   summary()
 ```
 
-```{r}
+Se observa que el valor mínimo se mantiene, mientras que el máximo ha disminuido considerablemente y hasta un valor que presenta la misma cantidad de dígitos que la media.
+
+Asimismo, la media y la mediana se han aproximado. Sin embargo, en tanto la primera constinúa siendo mayor que la segunda, cabe esperar que la distribución de la variable siga siendo asimétrica a derecha. Se confirma esto con un nuevo histograma.
+
+```{r} 
 dataset_sin_outliers %>% 
   ggplot(aes(x=price)) + 
-  geom_histogram(fill="#69b3a2", color="#e9ecef", bins = 200) + 
-  #ggtitle("Histograma de precios") + 
+  geom_histogram(fill="#69b3a2", color="#e9ecef",bins = 100) + 
   labs(title='Histograma de precios',
+       subtitle = 'Valores atípicos eliminados',
        x = 'Precios (USD)',
        y = 'Frecuencia') +
   theme_minimal()
 ```
 
+El haber filtrado los valores atípicos ha facilitado la visualización de la información, peritiendo observar más claramente el intervalo en el cual se concentra la mayor cantidad de datos.
+
+De todos modos, se mantiene constante el hecho de que aproximadamente el 2% de los precios observados represente al 50% de las propiedades del dataset.
+
+```{r}
+count(dataset_sin_outliers, price) %>% 
+  mutate(frec = n/nrow(dataset_sin_outliers)*100) %>% 
+  arrange(desc(frec)) %>% 
+  mutate(frec_acum = cumsum(frec),
+         id = 1:nrow(.)) %>% 
+  select(id, everything())
+```
+
+## 6.2. Relación con la variable _tipo de propiedad_
+
+Se replica la obtención de medidas de posición de la variable _precio_ agrupada de acuerdo a la variable _tipo de propiedad_.
+
+```{r}
+dataset_sin_outliers %>% 
+  group_by(property_type) %>% 
+  summarise(mín = min(price), 
+            Q1 = quantile(x = price, probs = 0.25, names = FALSE), 
+            mediana = median(price),
+            media = mean(price), 
+            Q3 = quantile(x = price, probs = 0.75, names = FALSE), 
+            máx = max(price))
+```
+
+Si bien persiste el hecho de que el tipo de propiedad Departamento presente el mayor rango entre sus valores, ahora los tres tipos de propiedad exhiben valores máximos muy similares. Esto era esperable dada la remoción previa de valores atípicos, en la cual se estableció una cota superior e inferior y se filtraros los valores por encima y por debajo respectivamente. En tanto no existían valores menores a la cota inferior, el mínimo se mantuvo. EL máximo, en cambio, se vio reducido al límite superior establecido.
+
+La media y  la mediana del tipo de propiedad Departamento sigue siendo similar a las del tipo de propiedad PH aunque en ambos casos las distancias entre estas dos medidas se ha acortado.
+
+Esto también ha ocurrido con la media y la mediana del tipo de propiedad Casa, donde ambas medidas se han aproximado en mayor medida. Si se agrega a este dato el hecho de que, como producto de la poda de outliers, este grupo presente menor dispersión, se podría suponer que su distribución ya no debería se asimétrica o, al menos, no de forma tan marcada.
+
+Se cotejan estos supuestos con un nuevo boxplot. Igual que se hizo anteriormente, se convierten los valores de la variable _tipo de propiedad_ en factores para poder realizar el gráfico.
+
 ```{r}
 ggdata_sin_out <- dataset_sin_outliers %>% 
-  mutate(id = as.factor(id),
-         l3 = as.factor(l3),
-         property_type = as.factor(property_type))
+  mutate(property_type = as.factor(property_type))
 
 ggplot(ggdata_sin_out, aes(x = property_type, y = price, group = property_type, fill = property_type)) +
   geom_boxplot() +
   labs(title='Precio por tipo de propiedad',
-       subtitle = 'Valores atípicos removidos',
+       subtitle = 'Valores atípicos eliminados',
        x = 'Tipos de propiedad',
        y = 'Precio (USD)')
 ```
 
-```{r}
-# OPCIÓN #2
+## 6.3. Relación entre variables
 
-data.riq <- IQR(dataset_sin_NA$price)
-data.riq
-
-cuantiles<-quantile(dataset_sin_NA$price, c(0.25, 0.5, 0.75), type = 7)
-cuantiles
-
-outliers_min<-as.numeric(cuantiles[1])-1.5*data.riq
-print(outliers_min)
-
-outliers_max<-as.numeric(cuantiles[3])+1.5*data.riq
-print(outliers_max)
-
-dataset_sin_outliers2 <- dataset_sin_NA %>% 
-  filter(price > outliers_min,
-         price < outliers_max)
-```
-
-
-## 6. Análisis exploratorios III
-
- - Repetir los 4 análisis exploratorios realizados en el punto 4 y realizar unos breves comentarios sobre los cambios que encontraron.
+Nuevamete, se grafica un correlograma que evidencie la relación entre las variables del dataset sin faltantes ni datos atípicos.
 
 ```{r}
-dataset_sin_outliers2 %>% 
-  select(price) %>% 
-  summary()
-```
-
-```{r}
-dataset_sin_outliers2 %>% 
-  ggplot(aes(x=price)) + 
-  geom_histogram(fill="#69b3a2", color="#e9ecef",bins = 100) + 
-  #ggtitle("Histograma de precios") + 
-  labs(title='Histograma de precios',
-       x = 'Precios (USD)',
-       y = 'Frecuencia') +
-  theme_minimal()
-```
-
-```{r}
-count(dataset_sin_outliers2, price) %>% 
-  mutate(frec = n/nrow(dataset_sin_outliers2)*100) %>% 
-  arrange(desc(frec)) %>% 
-  mutate(frec_acum = cumsum(frec))
-```
-```{r}
-dataset_sin_outliers2 %>% 
-  group_by(property_type) %>% 
-  summarise(Q1 = quantile(x = price, probs = 0.25, names = FALSE), 
-            Q3 = quantile(x = price, probs = 0.75, names = FALSE), 
-            promedio = mean(price), 
-            mín = min(price), 
-            máx = max(price))
-```
-
-```{r}
-ggdata_sin_out2 <- dataset_sin_outliers2 %>% 
-  mutate(id = as.factor(id),
-         l3 = as.factor(l3),
-         property_type = as.factor(property_type))
-
-ggplot(ggdata_sin_out2, aes(x = property_type, y = price, group = property_type, fill = property_type)) +
-  geom_boxplot() +
-  labs(title='Precio por tipo de propiedad',
-       subtitle = 'Valores atípicos removidos',
-       x = 'Tipos de propiedad',
-       y = 'Precio (USD)')
-```
-
-```{r}
-dataset_sin_outliers2 %>% 
+dataset_sin_outliers %>% 
   select_if(is.numeric) %>%
   ggcorr(method = c("complete.obs","pearson"),
          low = '#e0f3db',
@@ -410,21 +444,56 @@ dataset_sin_outliers2 %>%
          hjust = 0.75,
          legend.position = "left") +
   labs(title = "Propiedades en venta en CABA - Correlograma",
-       subtitle = "Valores atípicos removidos")
+       subtitle = "Valores atípicos eliminados")
 ```
 
-## 7. Modelo lineal
+Al igual que se observó anteriormente, la variable _superficie total_ y _superficie cubierta_ son las que se encuentran más correlacionadas en un sentido positivo. 
 
- - a) Realizar un modelo lineal simple para explicar el precio en función de las habitaciones (rooms) y otro modelo que explique el precio en función de la superficie total (surface_total)
+Lo que ha camiado es que ya no son las variables _habitaciones_ y _baños_ las que le siguen en orden de correlación, sino que ahora son las correlaciones de _baño_ y _precio_ y de _habitaciones_ y _precio_ las que ocupan el segundo lugar, ambas con una correlación apenas superior a 0.6.
 
-```{r}
+Esto demuestra que, si bien la remoción de datos faltantes no tuvo mayores consecunecias en el dataset utilizado, tampoco fue inocuo. Previamente a realizar este procesamiento, las variables más correlacionadas luego de _superficie total_ y _superficie cubierta_ eran _habitaciones_ y _baños_, por un lado, y _precio_ y _baño_, por otro. La correlación entre _dormitorios_ y _precio_ se encontraba recién en un tercer lugar. 
 
-```
+Ahora, además de haber modificado sus órdenes, esta últimas tres correlaciones se han aproximado entre sí.
 
- - b) Usar la función summary() para obtener informacion de ambos modelos. Explicar los valores de los coeficientes estimados.
+# 7. Modelo lineal
+
+## 7.1. Modelos lineales
+
+### 7.1.1. Modelo 1: el precio en función de las habitaciones
+
+modelo lineal simple para explicar el precio en función de las habitaciones (rooms)
  
 ```{r}
+data.model1 <- dataset_sin_outliers %>% 
+  select(price, rooms)
 
+mod1 <- lm(price ~ rooms, data = data.model1)
+
+summary(mod1)
 ```
+
+### 7.1.2. Modelo 2: el precio en función de la superficie total
+
+modelo que explique el precio en función de la superficie total (surface_total)
  
- - c) ¿Cuál modelo usarían para predecir el precio? ¿Por qué?
+```{r}
+data.model2 <- dataset_sin_outliers %>% 
+  select(price, surface_total)
+
+mod2 <- lm(price ~ surface_total, data = data.model2)
+
+coef(mod2)
+summary(mod2)
+```
+
+Intercept Estimate: ordenada al origen
+
+surface_total Estimate: pendiente
+
+explicar coeficientes estimados
+
+https://biologyforfun.wordpress.com/2014/11/23/interpreting-regression-coefficient-in-r/
+
+## 7.2. Selección del modelo
+
+precio en función de la superficie total
