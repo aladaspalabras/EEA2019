@@ -3,6 +3,8 @@
 ## [Trabajos Prácticos](trabajos_practicos)
 ## [Entrega de Trabajos Prácticos - Código](EEA-TPs)
 
+### [Ejercicios modelo lineal](ejercicios_modelo_lineal)
+
 # Materiales para las clases prácticas:
 
 ### Clase 1: 07-09
