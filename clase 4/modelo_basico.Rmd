@@ -73,7 +73,7 @@ dist1 <- sim1 %>%
     x1 = x + dodge,
     pred = 7 + x1 * 1.5
   )
-
+dist1
 ggplot(dist1, aes(x1, y)) + 
   geom_abline(intercept = 7, slope = 1.5, colour = "grey40") +
   geom_point(colour = "grey40") +
@@ -92,8 +92,7 @@ Para computar la distancia, primero necesitamos una función que represente a nu
   
 ```{r}
 model1 <- function(a, data) {
-  data %>% 
-    mutate(pred = x * a[2] + a[1])
+  a[1] + data$x * a[2]
   }
 
 model1(c(7, 1.5), sim1)
