@@ -29,6 +29,8 @@ h3{
 
 ```{r, warning=FALSE}
 library(tidyverse)
+library(OneR)
+library(broom)
 ```
 
 # 1. Regresión Lineal Múltiple
@@ -84,8 +86,6 @@ Resulta interesante destacar que, a excepeción de los barrios de Agronomía, Al
 
 Los coeficientes calculados para Agronomía y Villa Crespo, por su parte, muestran un valor mayor a 0.75, indicando que en estos casos la variable resulta significativa incluso en ausencia de las demás variables.
 
---- CHEQUEAR ---
-
 ### 1.2.3. Evaluación del modelo
 
 Respecto de la evaluación del modelo, podemos ver que este presenta un R² de 0.77, lo que indica que nuestro modelo es capaz de explicar el 77% de la variabilidad de la variable depediente _y_ a partir de las variables independientes proporcionadas.
@@ -120,10 +120,10 @@ El modelo predice que la propiedad en el barrio de Abasto vale 324596.4, mientra
 Se crea un nuevo modelo sin la variable _l3_.
 
 ```{r}
-modelo_l3 <- lm(price ~ rooms + bathrooms + surface_total + surface_covered + property_type,
+modelo_sin_l3 <- lm(price ~ rooms + bathrooms + surface_total + surface_covered + property_type,
                    data=properties)
 
-summary(modelo_l3)
+summary(modelo_sin_l3)
 ```
 
 Se observa que este modelo presenta una mayor cantidad de residuos. Si bien el número observado es menor (-9643) que en el modelo anterior (-3307), lo deseable es que la media y/o mediana de los residuos se acerque a 0.
@@ -150,53 +150,152 @@ plot(sort(properties$price, decreasing = FALSE),
      col = 'cyan4')
 ```
 
-No lo hay. Tomo como mínimo los precios debajo del Q1, como precio medio los que están entre el Q1 y el Q3 y como altos los que se ubican por encima de este último. Utilizo la media de cada barrio para evitar outliers.
+No lo hay. Se generan 3 bins y se establecen los puntos de corte a partir de ellos.
 
 ```{r}
-Q1 = 120000
-Q3 = 259000
-
 precios <- properties %>% 
   select(l3, price) %>% 
   group_by(l3) %>% 
-  summarise(mediana_precio = median(price))
-  arrange(desc(mediana_precio))
+  summarise(media_precio = mean(price)) %>% 
+  arrange(media_precio)
 
 precios
 ```
+
+
 ```{r}
-summary(precios$mediana_precio)
+precios$bins <- bin(precios$media_precio, 
+                    nbins=3, 
+                    labels=c("bajo", "medio", "alto"), 
+                    method="content")
 
-Q1 = 129600
-Q3 = 169000
+precios$clusters <- bin(precios$media_precio,
+                        nbins=3, 
+                        labels=c("bajo", "medio", "alto"), 
+                        method="clusters")
 
-properties_barrios <- left_join(properties, precios, by='l3') %>% 
-  mutate(barrios = case_when(mediana_precio < Q1 ~ "bajo",
-                             mediana_precio > Q3 ~ "alto",
-                             TRUE ~ "medio"))
+precios
+```
+
+```{r}
+precios %>% 
+  count(bins)
+
+precios %>% 
+  count(clusters)
+```
+El de clusters no está tan bien balanceado. Uso el de contents.
+
+```{r}
+properties_barrios <- left_join(properties, precios[,c('l3', 'bins')], by='l3')
+names(properties_barrios)[names(properties_barrios) == 'bins'] <- 'barrios'
 
 properties_barrios
 ```
 
-```{r}
-library('binr')
+## 2.2. Modelo con variable _barrios_
 
-bin(properties$price, nbins = 3, labels = NULL, method = c("length"), na.omit = TRUE)
-```
+Se calcula un nuevo modelo.
 
 ```{r}
-model_con_barrios <- lm(price ~ l3 + rooms + bathrooms + surface_total + surface_covered +
+model_con_barrios <- lm(price ~ rooms + bathrooms + surface_total + surface_covered +
                           property_type + barrios, data=properties_barrios)
 
 summary(model_con_barrios)
 ```
+Interpretación de los resultados.
 
-## 2.2. Modelo con variable _barrios_
+Mejor modelo: con l3 por R cuadrado ajustado
+En mi opinión: el de barrios es más útil
 
-## 2.3. Comparación de modelos
+## 2.3. Variable *surface_patio*
 
-## 2.4. Variable *surface_patio*
+Chequeo si hay valores en sup total que sean menores a sup cubierta
+
+```{r}
+properties_barrios[properties_barrios$surface_covered > properties_barrios$surface_total,]
+```
+
+No los hay. De haberlos habido, hubiese tomado como que no hay patio.
+
+```{r}
+properties_barriosYpatio <- properties_barrios %>% 
+  mutate(surface_patio = surface_total-surface_covered)
+
+properties_barriosYpatio[properties_barriosYpatio$surface_patio<0,]
+
+properties_barriosYpatio
+```
+
+## 2.4. Modelo con la variable *surface_patio*
+
+Se entrena un nuevo modelo
+
+```{r}
+modelo_barriosYpatio <- lm(price ~ barrios + rooms + bathrooms + surface_covered + surface_patio +
+                          property_type, data=properties_barriosYpatio)
+
+summary(modelo_barriosYpatio)
+```
+surface_patio: mismo coeficiente que surface_total...
 
 # 3. Evaluación de modelo
 
+Analizar los residuos del modelo elaborado en 2.d
+
+## 3.1. Modelo alternativo
+
+Comparar la performance del modelo de 2.d con éste, tanto en términos de la variabilidad explicada cómo de su relación con los supuestos del modelo lineal. Re-interpretar los parámetros del modelo.
+
+```{r}
+model_log = lm(price ~ log(rooms) + log(bathrooms) + log(surface_covered) + property_type + 
+                 barrios + surface_patio, data=properties_barriosYpatio)
+
+summary(model_log)
+```
+
 # 4. Modelos por tipo de propiedad
+
+Anido el dataframe por la variable *property_type*.
+
+```{r}
+propTypes <- properties_barriosYpatio %>% 
+  group_by(property_type) %>% 
+  nest()
+
+propTypes
+```
+
+Para cada tipo de propiedad, genero el modelo de 2d
+
+```{r}
+patio_model <- function(df) {
+  lm(price ~ barrios + rooms + bathrooms + surface_covered + surface_patio, data=df)
+}
+
+propTypes <- propTypes %>% 
+  mutate(model = map(data, patio_model))
+
+propTypes
+```
+
+```{r}
+get_coefficients <- function(mod){
+  c <- coef(mod) %>% 
+    as.list() %>% 
+    as_tibble()
+  return(c)
+}
+
+propTypes %>% 
+  mutate(coeff = map(model, get_coefficients),
+         glnc = map(model, glance)) %>% 
+  unnest(coeff, glnc, .drop = TRUE)
+```
+
+```{r}
+summary(propTypes$model[[1]])
+summary(propTypes$model[[2]])
+summary(propTypes$model[[3]])
+```
+
