@@ -36,6 +36,7 @@ library(broom)
 # 1. Regresión Lineal Múltiple
 
 ## 1.1. Creación del modelo
+
 Se carga un dataset de propiedades.
 
 ```{r}
@@ -82,9 +83,9 @@ Las variables _rooms_, _bathrooms_, *surface_total* y *surface_covered*, por otr
 
 ### 1.2.2. Significatividad de las variables dummies
 
-Resulta interesante destacar que, a excepeción de los barrios de Agronomía, Almagro, Barracas, Caballito, Monte Castro, Parque Chas, San Telmo, Villa Crespo, Villa del Parque, Villa Luro, Villa Real y Santa Rita, los valores de la variable dummy _l3_ y *property_type* presentan un *p-valor* menor a 0.05, lo que significa que la variable es útil para explicar _y_ cuando en el modelo se encuentran presentes las demás variables, pero no en otro caso.
+Resulta interesante destacar que, a excepeción de los barrios de Agronomía, Almagro, Barracas, Caballito, Monte Castro, Parque Chas, San Telmo, Villa Crespo, Villa del Parque, Villa Luro, Villa Real y Santa Rita, los valores de la variable dummy _l3_ presentan un *p-valor* menor a 0.05, lo que significa que la variable es útil para explicar _y_ cuando en el modelo se encuentran presentes las demás variables, pero no en otro caso. Lo mismo sucede con la variable dummy *property_type*.
 
-Los coeficientes calculados para Agronomía y Villa Crespo, por su parte, muestran un valor mayor a 0.75, indicando que en estos casos la variable resulta significativa incluso en ausencia de las demás variables.
+Los coeficientes calculados para Agronomía y Villa Crespo, por su parte, muestran un valor mayor a 0.7, indicando que en estos casos la variable resulta significativa incluso en ausencia de las demás variables.
 
 ### 1.2.3. Evaluación del modelo
 
@@ -140,7 +141,7 @@ El modelo que mejor explica la variable precios es el modelo que incluye la vari
 
 ## 2.1. Variable _barrios_
 
-Grafico los precios de los barrios para evaluar si hay puntos de quiebre claros:
+Con el propósito de crear una nueva variable _barrios_ de tipo categórica que distinga entre barrios con precio _alto_, _medio_ y _bajo_, se grafica un scatter plot de precios que nos permita visualizar si existen puntos críticos capaces de funcionar como puntos de corte entre las categorías definidas.
 
 ```{r}
 plot(sort(properties$price, decreasing = FALSE),
@@ -150,7 +151,7 @@ plot(sort(properties$price, decreasing = FALSE),
      col = 'cyan4')
 ```
 
-No lo hay. Se generan 3 bins y se establecen los puntos de corte a partir de ellos.
+Dado que no se observa la presencia de tales puntos, se opta por generar 3 bins de manera automática utilizando el método de "clusters" de la función _bin_ del paquete _OneR_. Para ello, primero se agrupan los precios por barrios y se calcula su media, este será el input que tomará la función.
 
 ```{r}
 precios <- properties %>% 
@@ -164,11 +165,6 @@ precios
 
 
 ```{r}
-precios$bins <- bin(precios$media_precio, 
-                    nbins=3, 
-                    labels=c("bajo", "medio", "alto"), 
-                    method="content")
-
 precios$clusters <- bin(precios$media_precio,
                         nbins=3, 
                         labels=c("bajo", "medio", "alto"), 
@@ -177,14 +173,34 @@ precios$clusters <- bin(precios$media_precio,
 precios
 ```
 
-```{r}
-precios %>% 
-  count(bins)
+Dado que deseamos tener clases balanceadas, revisamos cuántos barrios han quedado agrupados en cada clase.
 
+```{r}
 precios %>% 
   count(clusters)
 ```
-El de clusters no está tan bien balanceado. Uso el de contents.
+
+Vemos que no se han obtenido clases balanceadas. La categoría _bajo_ cuenta con muchos más barrios que las otras dos. Y la categría _alto_ agrupa un único barrio. 
+
+Volvemos a generar los bins pero ahora utilizamos el método de _content_, que arma bins con igual cantidad de elementos.
+
+```{r}
+precios$bins <- bin(precios$media_precio, 
+                    nbins=3, 
+                    labels=c("bajo", "medio", "alto"), 
+                    method="content")
+
+precios
+```
+
+Chequeamos para confirmar:
+
+```{r}
+precios %>% 
+  count(bins)
+```
+
+Agregamos la nueva información al data frame de datos que ya teníamos. Para ello, utilizamos la función *left_join*. Además, cambiamos el nombre de la nueva variable _bins_ por _barrios_.
 
 ```{r}
 properties_barrios <- left_join(properties, precios[,c('l3', 'bins')], by='l3')
@@ -195,7 +211,7 @@ properties_barrios
 
 ## 2.2. Modelo con variable _barrios_
 
-Se calcula un nuevo modelo.
+Se ajusta un nuevo modelo. Esta vez, se utiliza la variable _barrios_ creada en el apartado anterior en lugar de la variable _l3_.
 
 ```{r}
 model_con_barrios <- lm(price ~ rooms + bathrooms + surface_total + surface_covered +
@@ -203,33 +219,42 @@ model_con_barrios <- lm(price ~ rooms + bathrooms + surface_total + surface_cove
 
 summary(model_con_barrios)
 ```
-Interpretación de los resultados.
 
-Mejor modelo: con l3 por R cuadrado ajustado
-En mi opinión: el de barrios es más útil
+Es posible notar que la mediana de los residuos de este modelo presenta signo negativo, al igual que el modelo que incluía a la variable _l3_. Esto nos indica que al menos la mitad de los valores Ŷ predichos por ambos modelos son valores que se encuentran por encima de los valores Y observados.
+No obstante, la mediana de los residuos de este segundo modelo se encuentra más cerca del 0 que la mediana del modelo con _l3_, lo que podría indicar una menor distancia entre los valores Ŷ predichos en este caso y los valores Y reales.
+
+En cuanto a los coeficientes calculados, podemo observar que, si bien sus valores han cambiado, no lo ha hecho así si signo. Lo que nos implica que aquellas variables que influían positivamente en la variable a predecir lo siguen haciendo y lo mismo ocurre con la variable _rooms_, cuya incidencia era negativa.
+
+Por último, notamos que la variabilidad explicada por este modelo es del 73% (valor de R²). Sin embargo, como ya se advirtió previamente, no debemos fiarnos de esta medida para establecer una comparación con el modelo de _l3_, sino que debemos utilizar su valor ajustado. Dado que el R² ajustado de este modelo resulta menor que el del modelo de _l3_ (73% contra 77%), podemos afirmar que es ete último el modelo que mejor explica la variabilidad de los datos.
+
+De todos modos, cabe hacer la reflexión de qué modelo resulta más útil a la hora de estimar el precio de una propiedad. Si bien el modelo de _l3_ explica mejor a la variable Y, la cantidad de valores posibles posibles que puede adoptar la variable _l3_ y sus correspondientes coeficientes (igualmente variados) no permiten establecer un patrón claro que dé cuenta de cómo influye esta variable en la predicción. El modelo ajustado con la variable _barrios_, en cambio, si bien posee un menor poder explicativo, sí nos da una idea de esta relación: en todos los casos en los que la propiedad se encuentre ubicada en un barrio de precio "medio", el valor predicho de la misma aumentará 20501,46, y en los casos en los que se ubique en un barrio de precio "alto", el valor se incrementará en 76571,89.
 
 ## 2.3. Variable *surface_patio*
 
-Chequeo si hay valores en sup total que sean menores a sup cubierta
+Dado que las variable *surface_covered* y *surface_total* están correlacionadas, se propone crear una nueva variable llamada *surface_patio*  que refleje la diferencia entre ambas superficies. De este modo:
+
+surface_patio = surface_total - surface_patio
+
+Sin embargo, podría ocurrir que se encontrasen casos de inconsistencia donde la superficie total de una vivienda fuese menor a su superficie cubierta. De encontrarse tales casos, se propone eliminarlos, puesto que se trataría de registros mal ingresados. 
+
+Entonces, como primer paso, se chequea la existencia de casos de inconsistencia.
 
 ```{r}
-properties_barrios[properties_barrios$surface_covered > properties_barrios$surface_total,]
+nrow(properties_barrios[properties_barrios$surface_covered > properties_barrios$surface_total,])
 ```
 
-No los hay. De haberlos habido, hubiese tomado como que no hay patio.
+No se observan casos en los que la superficie total sea menor que la cubierta. Se procede a generar la nueva variable previamente definida.
 
 ```{r}
 properties_barriosYpatio <- properties_barrios %>% 
   mutate(surface_patio = surface_total-surface_covered)
-
-properties_barriosYpatio[properties_barriosYpatio$surface_patio<0,]
 
 properties_barriosYpatio
 ```
 
 ## 2.4. Modelo con la variable *surface_patio*
 
-Se entrena un nuevo modelo
+Se entrena un nuevo modelo utilizando ahora la variable _barrios_ en lugar de _l3_ y la variable *surface_patio* en lugar de *surface_total*.
 
 ```{r}
 modelo_barriosYpatio <- lm(price ~ barrios + rooms + bathrooms + surface_covered + surface_patio +
