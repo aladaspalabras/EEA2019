@@ -1,11 +1,14 @@
 ---
-title: "Trabajo Práctico N°2^[El código fuente de este trabajo se encuentra disponible  [aquí](https://github.com/aladaspalabras/EEA2019/tree/master/EEA-TPs/TP01).]"
+title: "Trabajo Práctico N°2"
 author: "Macarena Fernandez Urquiza"
 output: 
   html_notebook:
     toc: true
     toc_float: true
     depth: 3
+    includes:
+      before_body: header.html
+      after_body: footer.html
 ---
 
 <style type="text/css">
@@ -27,15 +30,24 @@ h3{
 }
 </style>
 
-```{r, warning=FALSE}
+```{js logo-js, echo=FALSE}
+$(document).ready(function() {$('#header').parent().prepend('<div id=\"logo\"><img src=\"www/xxxxx.png\" style=\"position:absolute; top:0; right:0; padding:20px; height:120px\"></div>');
+  $('#header').css('margin-top', '60px')
+});
+```
+
+Se cargan las librerías que se utilizarán a lo largo del trabajo.
+
+```{r, ,message=FALSE, warning=FALSE}
 library(tidyverse)
 library(OneR)
 library(broom)
+library(modelr)
 ```
 
 # 1. Regresión Lineal Múltiple
 
-## 1.1. Creación del modelo
+## 1.1. Creación del modelo {#modelo_l3}
 
 Se carga un dataset de propiedades.
 
@@ -61,7 +73,6 @@ se crea un modelo de Regresión Lineal Múltiple para predecir el precio de cada
 modelo <- lm(price ~ l3 + rooms + bathrooms + surface_total + surface_covered + property_type,
             data=properties)
 
-length(unique(properties$l3))
 summary(modelo)
 ```
 
@@ -69,17 +80,19 @@ summary(modelo)
 
 ### 1.2.1. Interpretación de los coeficientes estimados
 
-Según este modelo, -109406.61 es la ordenada al origen. Esto significa que, si encontrásemos una propiedad en la que todas las variables tuviesen un valor igual a 0, el modelo predeciría que dicha propiedad tendría un precio de -109406.61.
+Según este modelo, -109406.61 es la ordenada al origen. Esto significa que, si encontrásemos una propiedad en la que todas las variables tuviesen un valor igual a 0, el modelo predeciría que dicha propiedad tendría un precio de -109406.61. Esto claramente no tiene sentido. No solo porque no tendríamos una propiedad con precio negativo sino porque, además, difícilemtne tendríamos una propiedad cuya superficie total fuese 0. 
 
-El resto de los coeficientes indica cómo varía, según la predicción de nuestro modelo, dicho precio inicial al aumentar en una unidad la variable en cuestión.
+El resto de los coeficientes indica cómo varía, según la predicción de nuestro modelo, dicho precio inicial al aumentar en una unidad cada variable en cuestión y dejando el resto de las variables con un valor constante.
 
 En el caso de las variables _l3_ y *property_type*, nos encontramos ante variables dummies, variales categóricas que indican que la propiedad tiene cierta cualidad o no. _l3_ se refiere al barrio donde se ubica la propiedad y *property_type*, al tipo de propiedad en que consiste (PH o departamento).
 
-Dado que una propiedad no puede encontrarse en más de un lugar ni ser de más de un tipo, solo uno de los coeficientes para la variable _l3_ y uno para la variable *property_type* tendrá influencia en la predicción que realice nuestro modelo para cada propiedad. Por ejemplo, en el caso de un departamento de Caballito, nuestro modeo utilizará el coeficiente 6220.15 para la variable _l3_ y el coefciente 92653.32 para *property_type*. El resto de los coeficientes relacionados a _l3_ y a *property_type* no se utilizarán dado que la variable reflejará un valor igual a 0 en dichos casos, dejándolos anulados. 
+Dado que una propiedad no puede encontrarse en más de un lugar ni ser de más de un tipo, solo uno de los coeficientes para la variable _l3_ y uno para la variable *property_type* tendrá influencia en la predicción que realice nuestro modelo para cada propiedad. Por ejemplo, en el caso de un departamento de Caballito, nuestro modeo utilizará el coeficiente 6220.15 para la variable _l3_ y el coefciente 92653.32 para *property_type*. El resto de los coeficientes relacionados a _l3_ y a *property_type* no se utilizarán dado que la variable reflejará un valor igual a 0 en dichos casos, dejándolos anulados.
+
+Es pertinente resaltar que, en los casos de variables dummies, nos encontraremos con k-1 coeficientes, donde k es la cantidad de clases que puede tomar la variable considerada. Esto se debe a que, de otra forma, el modelo estaría sobreparametrizado y las variables presentarían dependencia lineal, lo que impediría que el sistma de ecuaciones generado tuviese una única solución.
 
 En particular, se observa que los barrios de Puerto Madero, Las Cañitas, Belgrano, Palermos, Recoleta, Núñez, Barrio Norte, Coghlan, Colegiales, Villa Urquiza, Retiro, Saavedra, Villa Ortúzar, Villa Devoto, Chacarita, Pueyrredń, Caballito, Parque Chas, Villa Crespo y Agronomía influirán positivamente en el precio estimado por el modelo puesto que sus coeficientes son positivos. El resto de los barrios, en cambio, presenta un coeficiente negativo por lo que el valor estimado presentará un decremento si la propiedad se encuentra ubicada en uno de ellos.
 
-Las variables _rooms_, _bathrooms_, *surface_total* y *surface_covered*, por otro lado, son numéricas, y pueden tomar cualquier valor. La multiplicación de sus valores por sus respectivos coeficientes también tendrá un impacto en la predicción de nuestro modelo, ya sea generando un aumento en el precio, en el caso de los baños, la superficie total y la superficie cubierta, o ya sea provocando una disminución, en el caso de los dormitorios.
+Las variables _rooms_, _bathrooms_, *surface_total* y *surface_covered*, por otro lado, son numéricas, y pueden tomar cualquier valor. La multiplicación de sus valores por sus respectivos coeficientes también tendrá un impacto en la predicción de nuestro modelo, ya sea generando un aumento en el precio estimado, en el caso de los baños, la superficie total y la superficie cubierta, o ya sea provocando una disminución, en el caso de los dormitorios.
 
 ### 1.2.2. Significatividad de las variables dummies
 
@@ -89,7 +102,7 @@ Los coeficientes calculados para Agronomía y Villa Crespo, por su parte, muestr
 
 ### 1.2.3. Evaluación del modelo
 
-Respecto de la evaluación del modelo, podemos ver que este presenta un R² de 0.77, lo que indica que nuestro modelo es capaz de explicar el 77% de la variabilidad de la variable depediente _y_ a partir de las variables independientes proporcionadas.
+Respecto de la evaluación del modelo, podemos ver que éste presenta un R² de 0.77, lo que indica que nuestro modelo es capaz de explicar el 77% de la variabilidad de la variable depediente Y a partir de las variables independientes proporcionadas.
 
 ## 1.3. Predicciones
 
@@ -97,7 +110,7 @@ A continuación, se proponen dos nuevos casos y se utiliza el modelo ajustado pa
 
 El primer caso consiste en un departamento de 120 metros cuadrados cubiertos, ubicado en el barrio de Abasto, con 3 dormitorios y 2 baños. El segundo se trata de un PH en Balvanera, con 80 metros cuadrados cubiertos, 20 metros cuadrados no cubiertos, 2 dormitorios y 3 baños.
 
-Se genera un nuevo dataset con estos casos y se utiliza la funció _predict_ para predecir sus precios.
+Se genera un nuevo dataset con estos casos y se utiliza la función _predict_ para predecir sus precios.
 
 ```{r}
 nuevos_casos <- data.frame(
@@ -127,19 +140,25 @@ modelo_sin_l3 <- lm(price ~ rooms + bathrooms + surface_total + surface_covered 
 summary(modelo_sin_l3)
 ```
 
-Se observa que este modelo presenta una mayor cantidad de residuos. Si bien el número observado es menor (-9643) que en el modelo anterior (-3307), lo deseable es que la media y/o mediana de los residuos se acerque a 0.
+
+Se observa que la mediana de los residuos de este modelo se encuentra más alejada del 0 que en el [modelo anterior](#modelo_l3) (-3307), lo que nos indica que su distribución presenta mayor asimetría. Lo deseable sería que este valor se encontrase próximo al 0 para poder verificar una distribución normal de los residuos, i.e. de la diferencia entre los valors Ŷ predichos y los valores de Y observados.
 
 Por otro lado, si bien los coeficientes estimados han variado su valor, no han cambiado su signo, por lo que su incidencia en la estimación de precios se mantiene: aquellas variables que incrementaban el valor de los precios continuan haciéndolo y lo mismo ocurre con las que disminuían este valor.
 
-Finalmente, se puede que este segundo modelo posee una menor capacidad explicativa de la variable _y_. Su R² nos indica que las variables independientes solo pueden explicar el 68% de la variable dependiente. Este decremento podría resultar esperable en tanto este modelo utiliza menos variables. Los modelos de Regresión Lineal aumentan su R² conforme aumentan la cantidad de variables empleadas en la predicción, sin importar si estas están o no correlacionadas con la variable a predecir. Sin embargo, si observamos el R² ajustado, vemos que también aquí el primer modelo supera al segundo (77% contra 68%). Esto resulta relevante puesto que el R² ajustado indica la capacidad de explicación de un modelo considerando las variables independientes que sí se encuentran relacionadas con la dependiente. Esta medida disminuya al añadir variables no relacionadas y aumneta solo si las variables agregadas son efecitvamente explicativas. Debido a esto, el R² ajustado posibilita la comparación de modelos con distinta cantidad de variables y será el que utilizaremos para determinar qué modelo explica mejor la variable precios.
-
 ## 1.5. Comparación de modelos
 
-El modelo que mejor explica la variable precios es el modelo que incluye la variable _l3_, dado que su R² ajustado. El modelo sin esta variable presenta una menor capacidad de explicación, solo el 68% de la variabilidad de la variable dependiente.
+El segundo modelo generado posee una menor capacidad explicativa de la variable Y. Su R² nos indica que las variables independientes solo pueden explicar el 68% de la variable dependiente. Este decremento resulta
+esperable en tanto este modelo utiliza menos variables. 
+
+Los modelos de Regresión Lineal aumentan su R² conforme aumentan la cantidad de variables empleadas en la predicción, sin importar si éstas están o no correlacionadas con la variable a predecir. 
+
+Sin embargo, si observamos el R² ajustado, vemos que también aquí el primer modelo supera al segundo (77% contra 68%). Esto resulta relevante puesto que el R² ajustado indica la capacidad de explicación de un modelo considerando las variables independientes que sí se encuentran relacionadas con la dependiente. Esta medida disminuye al añadir variables no relacionadas y aumneta solo si las agregadas son efecitvamente explicativas. Debido a esto, el R² ajustado posibilita la comparación de modelos con distinta cantidad de variables.
+
+Así, el modelo que mejor explica la variable precios es el modelo que incluye la variable _l3_, dado que su R² ajustado es mayor que el último modelo realizado.
 
 # 2. Creación de variables
 
-## 2.1. Variable _barrios_
+## 2.1. Variable _barrios_ {#barrios}
 
 Con el propósito de crear una nueva variable _barrios_ de tipo categórica que distinga entre barrios con precio _alto_, _medio_ y _bajo_, se grafica un scatter plot de precios que nos permita visualizar si existen puntos críticos capaces de funcionar como puntos de corte entre las categorías definidas.
 
@@ -162,7 +181,6 @@ precios <- properties %>%
 
 precios
 ```
-
 
 ```{r}
 precios$clusters <- bin(precios$media_precio,
@@ -209,9 +227,9 @@ names(properties_barrios)[names(properties_barrios) == 'bins'] <- 'barrios'
 properties_barrios
 ```
 
-## 2.2. Modelo con variable _barrios_
+## 2.2. Modelo con variable _barrios_ {#modelo_barrio}
 
-Se ajusta un nuevo modelo. Esta vez, se utiliza la variable _barrios_ creada en el apartado anterior en lugar de la variable _l3_.
+Se ajusta un nuevo modelo. Esta vez, se utiliza la variable _barrios_ creada en el [apartado anterior](#barrios) en lugar de la variable _l3_.
 
 ```{r}
 model_con_barrios <- lm(price ~ rooms + bathrooms + surface_total + surface_covered +
@@ -221,13 +239,13 @@ summary(model_con_barrios)
 ```
 
 Es posible notar que la mediana de los residuos de este modelo presenta signo negativo, al igual que el modelo que incluía a la variable _l3_. Esto nos indica que al menos la mitad de los valores Ŷ predichos por ambos modelos son valores que se encuentran por encima de los valores Y observados.
-No obstante, la mediana de los residuos de este segundo modelo se encuentra más cerca del 0 que la mediana del modelo con _l3_, lo que podría indicar una menor distancia entre los valores Ŷ predichos en este caso y los valores Y reales.
+No obstante, la mediana de los residuos de este segundo modelo se encuentra más cerca del 0 que la mediana del modelo con _l3_, lo que podría indicar que, en rangos generales, los valores Ŷ predichos en este caso y los valores Y reales se encuentran a menor distancia.
 
-En cuanto a los coeficientes calculados, podemo observar que, si bien sus valores han cambiado, no lo ha hecho así si signo. Lo que nos implica que aquellas variables que influían positivamente en la variable a predecir lo siguen haciendo y lo mismo ocurre con la variable _rooms_, cuya incidencia era negativa.
+En cuanto a los coeficientes calculados, podemo observar que, si bien sus valores han cambiado, no lo ha hecho así su signo. Lo que nos implica que aquellas variables que influían positivamente en la variable a predecir lo siguen haciendo y lo mismo ocurre con la variable _rooms_, cuya incidencia era negativa.
 
-Por último, notamos que la variabilidad explicada por este modelo es del 73% (valor de R²). Sin embargo, como ya se advirtió previamente, no debemos fiarnos de esta medida para establecer una comparación con el modelo de _l3_, sino que debemos utilizar su valor ajustado. Dado que el R² ajustado de este modelo resulta menor que el del modelo de _l3_ (73% contra 77%), podemos afirmar que es ete último el modelo que mejor explica la variabilidad de los datos.
+Por último, notamos que la variabilidad explicada por este modelo es del 73% (valor de R²). Sin embargo, como ya se advirtió previamente, no debemos fiarnos de esta medida para establecer una comparación con el modelo de _l3_, sino que debemos utilizar su valor ajustado. Dado que el R² ajustado de este modelo resulta menor que el del modelo de _l3_ (73% contra 77%), podemos afirmar que es este último el que mejor explica la variabilidad de los datos.
 
-De todos modos, cabe hacer la reflexión de qué modelo resulta más útil a la hora de estimar el precio de una propiedad. Si bien el modelo de _l3_ explica mejor a la variable Y, la cantidad de valores posibles posibles que puede adoptar la variable _l3_ y sus correspondientes coeficientes (igualmente variados) no permiten establecer un patrón claro que dé cuenta de cómo influye esta variable en la predicción. El modelo ajustado con la variable _barrios_, en cambio, si bien posee un menor poder explicativo, sí nos da una idea de esta relación: en todos los casos en los que la propiedad se encuentre ubicada en un barrio de precio "medio", el valor predicho de la misma aumentará 20501,46, y en los casos en los que se ubique en un barrio de precio "alto", el valor se incrementará en 76571,89.
+De todos modos, cabe hacer la reflexión de qué modelo resulta más útil a la hora de estimar el precio de una propiedad. Si bien el modelo de _l3_ explica mejor a la variable Y, la cantidad de valores posibles que puede adoptar la variable _l3_ y sus correspondientes coeficientes (igualmente variados) no permite establecer un patrón claro que dé cuenta de cómo influye esta variable en la predicción. El modelo ajustado con la variable _barrios_, en cambio, si bien posee un menor poder explicativo, sí nos da una idea de esta relación: en todos los casos en los que la propiedad se encuentre ubicada en un barrio de precio "bajo", el valor predicho de la misma no se verá incrementado; si, en cambio, el inmueble se encuentra en un barrio de precio "medio", su valor aumentará 20501,46, y se incrementará en 76571,89 en los casos en los que se ubique en un barrio de precio "alto".
 
 ## 2.3. Variable *surface_patio*
 
@@ -252,36 +270,83 @@ properties_barriosYpatio <- properties_barrios %>%
 properties_barriosYpatio
 ```
 
-## 2.4. Modelo con la variable *surface_patio*
+## 2.4. Modelo con la variable *surface_patio* {#patio}
 
 Se entrena un nuevo modelo utilizando ahora la variable _barrios_ en lugar de _l3_ y la variable *surface_patio* en lugar de *surface_total*.
 
 ```{r}
-modelo_barriosYpatio <- lm(price ~ barrios + rooms + bathrooms + surface_covered + surface_patio +
-                          property_type, data=properties_barriosYpatio)
+modelo_barriosYpatio <- lm(price ~ barrios + rooms + bathrooms + surface_covered + surface_patio+ property_type, data=properties_barriosYpatio)
 
 summary(modelo_barriosYpatio)
 ```
-surface_patio: mismo coeficiente que surface_total...
+
+Vemos que la variable *surface_patio* posee el mismo coeficiente que la variable *surface_total* del [modelo anterior](#modelo_barrio). Esto se debe a que la capacidad explicativa de la variable *surface_total* ahora está representada por *surface_patio*. Se comprueba que aquellos casos en los que la superficie total y la supericie cubierta eran iguales nada aportaban al modelo, pues estos caso ahora presentan valor 0 y el coeficiente asignado se ha mantenido.
+
+Por otro lado, la variable *surface_covered* presenta un coeficiente mayor: ha ganado poder explicativo en el aumento de precios como consecuencia de haber quitado del modelo la variable correlacionada *surface_total*.
 
 # 3. Evaluación de modelo
 
-Analizar los residuos del modelo elaborado en 2.d
+A continuación, analizaremos los residuos del [modelo generado con las variables _barrios_ y *surface_patio*](#patio).
 
-## 3.1. Modelo alternativo
-
-Comparar la performance del modelo de 2.d con éste, tanto en términos de la variabilidad explicada cómo de su relación con los supuestos del modelo lineal. Re-interpretar los parámetros del modelo.
+En primer lugar, generamos un data frame que contiene, además de las variables independientes y la variale dependiente, los residuos del modelo ajustado.
 
 ```{r}
-model_log = lm(price ~ log(rooms) + log(bathrooms) + log(surface_covered) + property_type + 
+resid_barriosYpatio <- properties_barriosYpatio %>% 
+  add_residuals(modelo_barriosYpatio)
+
+resid_barriosYpatio
+```
+
+Calculamos la media de estos residuos.
+
+```{r}
+mean(resid_barriosYpatio$resid)
+```
+
+Confirmamos que la media es un valor muy cercano a 0. Esto era esperable dado que justamente es uno de los supuestos que asumidos a la hora de generar el modelo y ajustar la recta por mínimos cuadrados.
+
+A continuación, se realizan distintos gráficos de los reisudos que nos permitirán analizarlos mejor.
+
+```{r}
+plot(modelo_barriosYpatio)
+```
+
+En el primer gráfico, podemos observar los residuos versus los valores predichos por el modelo. Esta visualización nos muestra que, conforme aumentan los valores predichos, también lo hace la varianza de sus residuos, por lo cual el supuesto de homogeneidad de la varianza no se satisface. Esto indica que los residuos presentan cierta estructura que no se explica por el modelo lineal ajustado.
+
+El segundo gráfico muestra que los residuos estandarizados no se ajustan a la distribución normal. Sería deseable que esto ocurriese, puesto que, de ese modo, los test e intervalos de confianza construídos serían más apropiados.
+
+Finalmente, el último gráfico, permite observar los residuos en relación a su leverage, es decir, en relación a su grado de influencia en el modelo. Dado que el leverage de cada observación puede tomar valores entre 0 y 1 y aquí todos los varlores se encuentran por debajo de 0.05, podríamos afirmar que ninguna observación aislada está forzando a la recta a desviarse del curso establecido por un conjunto de observaciones mayor.
+
+# 4. Modelo de elasticidad constante
+
+Se implementa un **modelo de elasticidad constante** definido del siguiente modo:
+
+$$
+log(price) = \beta_0 + \beta_1log(rooms) + \beta_2log(bathrooms) + \beta_3log(surface\_covered) + \beta_4property\_type + \beta_5barrio + \beta_6surface\_patio
+$$
+
+```{r}
+model_log = lm(log(price) ~ log(rooms) + log(bathrooms) + log(surface_covered) + property_type +
                  barrios + surface_patio, data=properties_barriosYpatio)
 
 summary(model_log)
 ```
 
-# 4. Modelos por tipo de propiedad
+En comparación con [el anterior](#patio), vemos que este modelo posee mayor capacidad explicativa. No solo su R² es mayor, sino que también lo es su R² ajustado, medida que nos permite realizar esta comparación. Mientras que el modelo anterior presentaba un R² ajustado de 73%, este es capaz de explicar el 80% de la variable dependiente.
 
-Anido el dataframe por la variable *property_type*.
+Además, la mediana de sus residuos se aproxima en gran medida al 0, lo que nos indica que los residuos presentan una distribución normal, una característica deseable desde los supuestos del modelo de regresipon lineal.
+
+Ahora bien, en cuanto a los parámetros, cabe hacer una aclaración: éstos no deben recibir la misma interpretación que en los modelos previos. 
+
+El hecho de aplicar el logaritmo a nuestra variable independiente nos permite plasmar el efecto porcentual constante que las variables explicativas tienen sobre aquella. De este modo, la variable *porperty_type*, por ejemplo, incrementa el precio un 0.2897% al tomar el valor _Departamento_.
+
+A su vez, el que a algunas variables numéricas, como _rooms_, _bathrooms_ y *surface_covered* también se les aplique el logaritmo posibilita considerar su propio incremento en términos porcentuales. Así, en el caso de la variable *surface_covered*, por ejemplo, su coeficiente no indica cuánto aumenta el precio cuando la superficie cubierta se incrementa en una unidad y el resto de las variables se mantienen constantes, sino que estima cuánto aumenta el precio cuando la superficie cubierta se incrementa en un 1%. Dado que, como ya dijimos, el efecto de las variables también debe ser entendido en términos porcentuales, al aumentar el 1% la superficie cubierta, el valor de la propiedad se incrementará un 0.8229%. De este coeficiciente se dice que refleja la _elasticidad estimada_ del precio en relación a la superficie cubierta.
+
+Esa modificación en en la fórmula nos permite ajustar un modelo más adecuado para la realidad, puesto que es de esperar que el aumento en el precio de una propiedad no sea uniforme respecto de la superficie cubierta, no esperamos que por cada metro² añadido la propiedad aumente la misma cantidad de dinero. Por el contrario, parecería sensato esperar que los inumuebles muy pequeños, al aumentar su superficie cubierta, tuviesen un incremento de precio menor en relación a aquellas propiedades muy grandes. El logaritmo de la variable a explicar nos permite realizar una estimación semjante.
+
+# 5. Modelos por tipo de propiedad
+
+En este apartado se agrupa el data frame por tipo de propiedad y se genera una nueva tabla con dos columnas: en la primera se indica el tipo de propiedad y en la segunda se anida el data frame correspondiente.
 
 ```{r}
 propTypes <- properties_barriosYpatio %>% 
@@ -291,7 +356,7 @@ propTypes <- properties_barriosYpatio %>%
 propTypes
 ```
 
-Para cada tipo de propiedad, genero el modelo de 2d
+Para cada tipo de propiedad, se genera un modelo igual al ajustado previamente, con las variables _barrios_ y *surface_patio*, y se lo almacena en la columna _model_.
 
 ```{r}
 patio_model <- function(df) {
@@ -304,23 +369,18 @@ propTypes <- propTypes %>%
 propTypes
 ```
 
-```{r}
-get_coefficients <- function(mod){
-  c <- coef(mod) %>% 
-    as.list() %>% 
-    as_tibble()
-  return(c)
-}
-
-propTypes %>% 
-  mutate(coeff = map(model, get_coefficients),
-         glnc = map(model, glance)) %>% 
-  unnest(coeff, glnc, .drop = TRUE)
-```
+Con el fin de comparar los distintos modelos, se utiliza la función *get_coefficients* aquí definida y las funciones *glance* y *augment*, del paquete _broom_. La primera muestra los coeficientes estimados de cada modelo, la segunda permite visuaizar información relativa al R², R² ajustado y el desvío estándar de los residuos (sigma), y la última nos brinda información más detallada de estos últimos, lo que nos permitirá observar su distribución.
 
 ```{r}
-summary(propTypes$model[[1]])
-summary(propTypes$model[[2]])
-summary(propTypes$model[[3]])
+results <- propTypes %>% 
+  mutate(glnc = map(model, glance))
+
+results
 ```
 
+
+Como una primera gran diferencia entre los tres modelos generados (y también con respecto a los anteriores), vemos que la variable _rooms_ solo tiene una influencia negativa sobre el precio en el modelo de Departamentos. En los demás casos ha pasado a ser positiva, lo que indica que el precio aumentará conforme lo haga la cantidad de habitaciones de la propiedad.
+
+Por otro lado, si observamos los R² de cada uno de los modelos, vemos que el que mejor se ajusta también es el modelo de Departamentos, cuyas variables independientes llevan a explicar casi el 76% de la variabilidad de Y. En segudo lugar se ubica el modelo de PH con casi el 66% y último, el de Casa con aproximadamente e 55%. 
+
+Esto es consistente con los valores de desvíos estándares observados, en los que el modelo de Casa presenta el mayor desvío y el de PHs, el menor. Adicionalmente, la tabla a continuación confirma que, de los tres modelos, es este último el que presenta una distribución más cercana a la normal.

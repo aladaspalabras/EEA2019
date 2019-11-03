@@ -1,0 +1,71 @@
+---
+title: "TP 2: Regresión lineal Múltiple"
+output: html_notebook
+---
+
+Datos provistos por [Properati Argentina](https://www.properati.com.ar)
+
+## INSTRUCCIONES
+
+Deberán realizar el trabajo en un **RNotebook** publicado en [RPubs](http://rpubs.com/).
+
+El **RNotebook** debe:
+
+* Tener el siguiente nombre: eea2019_tp2_(apellido)_(nombre)
+* Mostrar todo el código que escriban. NO USAR `echo=FALSE`
+* Ser ordenado de acuerdo a las consignas propuestas
+
+Una vez terminado el notebook deberán subirlo a RPubs e indicar el link en el archivo de carga de trabajos.
+
+## CRITERIOS DE EVALUACION
+
+* Explicar los procedimientos y decisiones en el texto
+* Comentar el código
+* Llegar a los resultados esperados
+* Recomendamos fuertemente usar las funciones de `tidyverse`
+
+## Datos
+
+Utilizar el nuevo dataset, ya filtrado, que se encuentra en https://diegokoz.github.io/EEA2019/trabajos_practicos/TP-2/ar_properties.rds
+
+## CONSIGNAS
+
+1) Regresión lineal múltiple
+
+  a) Crear un modelo para predecir el precio con todas las covariables.
+  b) Analizar los resultados del modelo:
+      i) Interpretación de los coeficientes estimados
+      ii) ¿Qué observan respecto de la significatividad de las variables dummy?
+      iii) Medidas de evaluación del modelo
+  c) ¿Qué es preferible tener para vender?:
+      1. un departamento de 120 mts cuadrados cubiertos en abasto, con 3 dormitorios y 2 baños
+      2. Un PH en balvanera, con 80 mts cuadrados cubiertos, 20 mts cuadrados no cubiertos, 2 dormitorios y 3 baños.
+
+  d) Realizar un modelo sin la covariable `l3` e interpretar sus resultados (todas las partes de la salida que consideren relevantes)
+
+  e) ¿Cuál es el modelo que mejor explica la variabilidad del precio?
+
+2) Creación de variables:
+    a) En el ejercicio anterior encontramos que algunos barrios son significativos, aunque no todos. Crear una nueva variable `barrios` que divida a los barrios según el precio por metro cuadrado promedio de las propiedades en ellos, con los grupos c('alto', 'medio', 'bajo'). Realizar un análisis exploratorio para definir los puntos de corte de la nueva variable y explicar los criterios utilizados en la construcción de la misma.
+    b) Calcular el modelo que predice el precio en función de las nuevas covariables e interpretar sus resultados (todas las partes de la salida que consideren relevantes)
+    c) ¿Qué modelo explica mejor la variabilidad de los datos, el que utiliza la variable `l3` o el que utiliza `barrio`? En su opinión, ¿Qué modelo es más útil? ¿Porqué? 
+    d) La interpretación de los coeficientes de las variables `surface_covered` y `surface_total` puede ser un poco problemática ya que se encuentran correlacionadas. Entonces, podemos construir una nueva variable  `surface_patio` para la diferencia entre ambas superficies:
+        i) Construir una nueva variable  `surface_patio`. Dado que algunos registros pueden contener la contradicción de que surface_total<surface_covered, explicitar cómo se procede para dichos casos. 
+        ii) Calcular nuevamente el modelo lineal para todas las covariables previas (excepto `surface_total`), `surface_covered` y `surface_patio` e interpretar los coeficientes de estas dos últimas variables
+
+3) Evaluación del modelo:
+    a) Analizar los residuos del modelo elaborado en 2.d
+    b) Calcular el modelo 
+$$
+log(price) = \beta_0 + \beta_1log(rooms) + \beta_2log(bathrooms) + \beta_3log(surface\_covered) + \beta_4property\_type + \beta_5barrio + \beta_6surface\_patio
+$$
+Comparar la performance del modelo de 2.d con éste, tanto en términos de la variabilidad explicada cómo de su relación con los supuestos del modelo lineal. Re-interpretar los parámetros del modelo.
+
+- Les recomendamos como referencia para la interpretación de los parámetros el
+[Wooldridge, J. M. (2006). Introducción a la econometría: un enfoque moderno. Editorial Paraninfo.](https://diegokoz.github.io/EEA2019/teorica/Wooldrige.pdf)
+
+4) Dataframes anidados
+    a) Anidar por la variable **property_type**
+    b) Construir para cada tipo de propiedad el modelo de 2.d e interpretar los resultados en cada caso. Qué diferencias encuentran entre los distintos modelos?
+
+

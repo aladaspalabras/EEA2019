@@ -1,0 +1,70 @@
+# 5. Modelos por tipo de propiedad
+
+En este apartado se agrupa el data frame por tipo de propiedad y se genera una nueva tabla con dos columnas: en la primera se indica el tipo de propiedad y en la segunda se anida el data frame correspondiente.
+
+```{r}
+propTypes <- properties_barriosYpatio %>% 
+  group_by(property_type) %>% 
+  nest()
+
+propTypes
+```
+
+Para cada tipo de propiedad, se genera un modelo igual al ajustado previamente, con las variables _barrios_ y *surface_patio*, y se lo almacena en la columna _model_.
+
+```{r}
+patio_model <- function(df) {
+  lm(price ~ barrios + rooms + bathrooms + surface_covered + surface_patio, data=df)
+}
+
+propTypes <- propTypes %>% 
+  mutate(model = map(data, patio_model))
+
+propTypes
+```
+
+Con el fin de comparar los distintos modelos, se utiliza la función *get_coefficients* aquí definida y las funciones *glance* y *augment*, del paquete _broom_. La primera muestra los coeficientes estimados de cada modelo, la segunda permite visuaizar información relativa al R², R² ajustado y el desvío estándar de los residuos (sigma), y la última nos brinda información más detallada de estos últimos, lo que nos permitirá observar su distribución.
+
+```{r}
+get_coefficients <- function(mod){
+  c <- coef(mod) %>% 
+    as.list() %>% 
+    as_tibble()
+  return(c)
+}
+
+results <- propTypes %>% 
+  mutate(coeff = map(model, get_coefficients),
+         glnc = map(model, glance),
+         agmnt = map2(model,data,augment))
+
+results
+```
+
+```{r}
+ results %>% 
+  unnest(coeff)
+```
+
+Como una primera gran diferencia entre los tres modelos generados (y también con respecto a los anteriores), vemos que la variable _rooms_ solo tiene una influencia negativa sobre el precio en el modelo de Departamentos. En los demás casos ha pasado a ser positiva, lo que indica que el precio aumentará conforme lo haga la cantidad de habitaciones de la propiedad.
+
+```{r}
+ results %>% 
+  unnest(glnc)
+```
+
+Por otro lado, si observamos los R² de cada uno de los modelos, vemos que el que mejor se ajusta también es el modelo de Departamentos, cuyas variables independientes llevan a explicar casi el 76% de la variabilidad de Y. En segudo lugar se ubica el modelo de PH con casi el 66% y último, el de Casa con aproximadamente e 55%. 
+
+Esto es consistente con los valores de desvíos estándares observados, en los que el modelo de Casa presenta el mayor desvío y el de PHs, el menor. Adicionalmente, la tabla a continuación confirma que, de los tres modelos, es este último el que presenta una distribución más cercana a la normal.
+
+```{r}
+results %>% 
+  unnest(agmnt) %>% 
+  select(property_type, .resid, .std.resid) %>% 
+  group_by(property_type) %>% 
+  summarise(resid_min = round(min(.resid)),
+            resid_1Q = round(quantile(.resid, 0)),
+            resid_median = round(median(.resid)),
+            resid_3Q = round(quantile(.resid, 0.75)),
+            resid_max = round(max(.resid)))
+```
