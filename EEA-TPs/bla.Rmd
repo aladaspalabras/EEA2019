@@ -42,14 +42,14 @@ results
 ```
 
 ```{r}
- results %>% 
+results %>% 
   unnest(coeff)
 ```
 
 Como una primera gran diferencia entre los tres modelos generados (y también con respecto a los anteriores), vemos que la variable _rooms_ solo tiene una influencia negativa sobre el precio en el modelo de Departamentos. En los demás casos ha pasado a ser positiva, lo que indica que el precio aumentará conforme lo haga la cantidad de habitaciones de la propiedad.
 
 ```{r}
- results %>% 
+results %>% 
   unnest(glnc)
 ```
 
@@ -68,3 +68,4 @@ results %>%
             resid_3Q = round(quantile(.resid, 0.75)),
             resid_max = round(max(.resid)))
 ```
+
