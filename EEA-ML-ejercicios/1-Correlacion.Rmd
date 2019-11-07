@@ -1,0 +1,106 @@
+---
+title: "Ejercicios de correlación"
+author: "Macarena Fernandez Urquiza"
+output: html_notebook
+---
+
+Cargo librerías.
+
+```{r, message=FALSE, warning=FALSE}
+library("datasets")
+library("dplyr")
+library("ggplot2")
+library("tidyverse")
+library("openintro")
+```
+
+**Ejercicio 1.** Mamíferos, Parte I. Usando el conjunto de datos de mammals, crear un diagrama de dispersión que muestre cómo el peso del cerebro de un mamífero (BrainWt) varía en función de su peso corporal (BodyWt).
+
+```{r}
+attach(msleep)
+
+ggplot(data=na.omit(msleep), aes(x=bodywt, y=brainwt)) +
+  geom_point() +
+  labs(title = "Scatterplot de Mamíferos", subtitle = "Peso cerebral en función del peso corporal", x = "Peso corporal ", y = "Peso cerebral")
+```
+
+**Ejercicio 2.** Medidas del cuerpo, Parte I. Utilizando el conjunto de datos bdims, realizar un diagrama de dispersión que muestre cómo el peso de una persona (wgt) varía en función de su altura (hgt). Identique el género de las observaciones en el scatterplot, para ello pinte de rojo a las mujeres y de azul a los hombres, use la instrucción col de R. Observar que en esta base de datos, sex = 1 para los hombres y sex = 0 para las mujeres.
+
+```{r}
+load("bdims.RData")
+
+ggplot(data=bdims, aes(y=wgt, x=hgt, col=sex)) +
+  geom_point() +
+  labs(title = "Scatterplot de medidas corporales en humanos", subtitle = "Peso en función de la altura", x = "Peso", y = "Altura")  +
+  scale_color_manual(labels = c("Mujeres", "Varones"), values = c("red", "blue"))
+```
+
+**Ejercicio 3.** Utilizando el conjunto de datos smoking, realizar un diagrama de dispersión que ilustre cómo varía la cantidad de cigarrillos que fuma por día una persona durante el finn de semana (amtWeekends), en función de su edad (age).
+
+```{r}
+data(smoking)
+
+ggplot(data=na.omit(smoking), aes(y=amtWeekends, x=age)) +
+  geom_point() +
+  labs(title = "Scatterplot de datos de fumadores", subtitle = "Cantidad de cigarrillos fumados durante el fin de semana en función de la edad", x = "Edad", y = "Cantidad de cigarrillos")  
+```
+
+**Ejercicio 4.** Utilizando el conjunto de datos cars, realizar un scatter plot del rendimiento del auto en la ciudad (mpgCity) en función del peso del auto (weight).
+
+```{r}
+attach(cars)
+
+ggplot(data=cars, aes(x=weight, y=mpgCity)) +
+  geom_point() +
+  labs(title = "Scatterplot de datos de autos del año 1993", subtitle = "Rendimiento del auto en la ciudad en función del peso del auto", x = "Rendimiento", y = "Peso")  
+```
+
+**Ejercicio 5.** Para cada uno de los cuatro scatterplots anteriores describa la forma, la dirección y la fuerza de la relación entre las dos variables involucradas. Respuestas posibles:
+ 
+- forma: lineal, no lineal (cuadrática, exponencial, etc.)
+- dirección: positiva, negativa
+- fuerza de la relación: fuerte, moderada, débil, no asociación. Tiene que ver con cuán dispersos están las observaciones respecto del patrón descripto en la forma.
+
+**Respuesta:**
+
+- Mammals: 
+    - forma: no lineal
+    - dirección: positiva
+    - relación: moderada
+- Bdims: 
+    - forma: lineal
+    - dirección: positiva
+    - relación fuerte
+- Smoking: 
+    - fuerza: no asociación.
+- Cars: 
+    - forma: no lineal
+    - dirección: negativa
+    - relación: fuerte
+
+**Ejercicio 6.** ¿Para cuáles de los 4 conjuntos de datos tiene sentido resumir la relación entre ambas variables con el coeficiente de correlación muestral de Pearson? Para los casos en los cuales contestó que era apropiado,
+
+- (a) calcúlelo usando R.
+- (b) Testee las siguientes hipótesis
+H0 : ρ = 0
+H1 : ρ 6= 0
+
+para cada uno de esos conjuntos. Antes de hacerlo defina a ρ en palabras. Observe que en el ítem 6 (a) calculó un estimador de esta cantidad, para cada conjunto. ¾En qué casos rechaza la hipótesis nula,
+a nivel 0.05?
+
+```{r}
+
+```
+
+**Ejercicio 7.** Mamíferos, Parte II. El conjunto de datos de mammals presenta un scatterplot que no es razonable resumir con el coeficiente de correlación muestral. El gráfico no es lindo por varios motivos, básicamente las observaciones parecen estar en escalas distintas, hay muchas observaciones superpuestas, necesitaríamos hacer un zoom del gráfico en la zona cercana al origen, a expensas de perder las dos observaciones con valores mucho más grandes que el resto. Podemos comparar lo que pasaría si no hubiéramos observado el diagrama de dispersión y quisiéramos resumir los datos con el coeficiente de correlación.
+
+- (a) Calcule el coeficiente de correlación muestral de Pearson para los 62 mamíferos.
+- (b) Identifique las dos observaciones que tienen valores de peso corporal y cerebral más grandes que el resto. Realice un scatter plot de las restantes 60 variables. ¾Cómo podría describir este gráfico? Calcule el coeficiente de correlación muestral de Pearson para estas 60 observaciones.
+- (c) El gráfico hecho en el ítem anterior no corrige el problema original del todo. La forma general podría describirse como un abanico: claramente las variables están asociadas, la asociación es positiva (ambas crecen simultáneamente) pero la dispersión de los datos parece aumentar a medida que ambas variables aumentan. Esta forma es frecuente en los conjuntos de datos, suelen corresponder a observaciones que están medidas en escalas que no son comparables entre sí y suele corregirse al tomar logaritmo en ambas variables. Para ver el efecto de transformar las variables, realice un scatterplot con todas las observaciones, del logaritmo (en base 10, o en base e) del peso del cerebro en función del logaritmo del peso corporal. Observe el gráfico. ¾Cómo lo describiría? Calcule la correlación de Pearson para los datos transformados.
+- (d) Para ambos conjuntos de datos (transformados por el logaritmo y sin transformar) calcule la correlación de Spearman.
+
+```{r}
+
+```
+
+**Ejercicio 8.** ¿Con qué coeficiente de correlación, Pearson o Spearman, resumiría los datos de cars? (weight, mpgCity)?
