@@ -1,0 +1,30 @@
+---
+title: "Ejercicios de Regresión Lineal Simple - Parte I"
+author: "Macarena Fernandez Urquiza"
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+---
+<style type="text/css">
+div.main-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+body {
+text-align: justify}
+h1{
+  font-size: 15pt
+}
+</style>
+
+Cargo librerías.
+
+```{r, message=FALSE, warning=FALSE}
+library("datasets")
+library("dplyr")
+library("ggplot2")
+library("tidyverse")
+library("openintro")
+```
