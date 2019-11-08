@@ -48,11 +48,14 @@ ggplot(data=mammals, aes(x=BodyWt, y=BrainWt)) +
 ```{r message=FALSE, warning=FALSE}
 attach(bdims)
 
-ggplot(data=bdims, aes(y=wgt, x=hgt, col=sex)) +
+ggplot(data=bdims, aes(y=wgt, x=hgt, color=as.factor(sex))) +
   geom_point() +
   labs(title = "Scatterplot de medidas corporales en humanos", 
-       subtitle = "Peso en función de la altura", x = "Peso", y = "Altura")  #+
-  scale_color_manual(labels = c("Mujeres", "Varones"), values = c("red", "blue"))
+       subtitle = "Peso en función de la altura", x = "Peso", y = "Altura") +
+  scale_color_manual(name = "Sexo",
+                     values = c("0" = "red", "1" = "blue"),
+                     labels = c("0" = "mujeres", "1" = "varones"))
+
 ```
 
 # Ejercicio 3

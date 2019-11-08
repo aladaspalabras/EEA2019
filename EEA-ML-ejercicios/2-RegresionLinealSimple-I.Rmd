@@ -28,3 +28,108 @@ library("ggplot2")
 library("tidyverse")
 library("openintro")
 ```
+
+# Ejercicio 1 
+
+**Medidas del cuerpo, Parte II.** Datos publicados en Heinz, Peterson, Johnson, y Kerk [2003], base de datos bdims del paquete openintro.
+
+(a) Realizar un diagrama de dispersión que muestre la relación entre el peso medido en kilogramos (wgt) y la circunferencia de la cadera medida en centímetros (hip.gi), ponga el peso en el eje vertical. Describa la relación entre la circunferencia de la cadera y el peso.
+(b) ¿Cómo cambiaría la relación si el peso se midiera en libras mientras que las unidades para la circunferencia de la cadera permanecieran en centímetros?
+(c) Ajuste un modelo lineal para explicar el peso por la circunferencia de cadera, con las variables en las unidades originales. Escriba el modelo (con papel y lápiz, con betas y epsilones). Luego, escriba el modelo ajustado (sin epsilones). Interprete la pendiente estimada en términos del problema. Su respuesta debería
+contener una frase que comience así: "Si una persona aumenta un cm. de contorno de cadera, en promedio su peso aumentará ... kilogramos".
+(d) Superponga la recta ajustada al scatterplot. Observe el gráfico. ¿Diría que la recta describe bien la relación entre ambas variables?
+(e) Elegimos una persona adulta físicamente activa entre los estudiantes de primer año de la facultad. Su contorno de cadera mide 100 cm. Prediga su peso en kilogramos.
+(f ) Esa persona elegida al azar pesa 81kg. Calcule el residuo.
+(g) Estime el peso esperado para la población de adultos cuyo contorno de cadera mide 100 cm.
+
+**Respuestas:**
+
+(a) Gráfico de dispersión:
+
+```{r, message=FALSE, warning=FALSE}
+attach(bdims)
+
+ggplot(bdims, aes(x=hip.gi, y=wgt, color=as.factor(sex))) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas corporales en humanos", 
+       subtitle = "Peso en función de la circunferencia de cadera", 
+       x = "Circunferencia de cadera", y = "Peso") +
+  scale_color_manual(name = "Sexo",
+                     values = c("0" = "red", "1" = "blue"),
+                     labels = c("0" = "mujeres", "1" = "varones"))
+```
+Se observa:
+
+- Forma: lineal
+- Dirección: positiva
+- Fuerza: fuerte
+
+Sin embargo, se observa una variación creciente. Conforme aumenta la circunfernecia de caderas, el peso se vuelve más disperso.
+
+(b) La relación no cambiaría. La variable de respuesta no depende de las unidades de medida.
+
+(c) Modelo Lineal
+
+```{r}
+cadera <- lm(wgt ~ hip.gi, data=bdims)
+
+coef(cadera)
+```
+
+Modelo Real
+
+$$
+peso_i = \beta_0 + \beta_1(cadera_i) + \epsilon_i
+$$
+Modelo ajustado
+
+$$
+peso = \beta_0 + \beta_1(cadera_i)
+$$
+
+Si una persona aumenta un cm. de contorno de cadera, en promedio su peso aumentará 1.52417 kilogramos.
+
+(d) Modelo sobre scatterplot:
+
+```{r}
+ggplot(bdims, aes(x=hip.gi, y=wgt, color=as.factor(sex))) +
+  geom_point() +
+  geom_smooth(method=lm , color="black", se=FALSE) +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas corporales en humanos", 
+       subtitle = "Peso en función de la circunferencia de cadera", 
+       x = "Circunferencia de cadera", y = "Peso") +
+  scale_color_manual(name = "Sexo",
+                     values = c("0" = "red", "1" = "blue"),
+                     labels = c("0" = "mujeres", "1" = "varones"))
+```
+
+La recta describe bien los datos en general. 
+
+# Ejercicio 2 
+
+**Medidas del cuerpo, Parte III.** Base de datos bdims del paquete openintro.
+
+(a) Realizar un diagrama de dispersión que muestre la relación entre el peso medido en kilogramos (wgt) y la altura (hgt).
+(b) Ajuste un modelo lineal para explicar el peso por la altura. Escriba el modelo (con papel y lápiz, con betas y epsilones). Luego, escriba el modelo ajustado (sin epsilones). Interprete la pendiente estimada en términos del problema. Interprete la pendiente. ¿Es razonable el signo obtenido para la pendiente estimada? Superponer al scatterplot anterior la recta estimada.
+(c) La persona elegida en el ejercicio anterior, medía 187 cm. de alto, y pesaba 81 kg. Prediga su peso con el modelo que tiene a la altura como covariable. Calcule el residuo de dicha observación.
+
+```{r}
+
+```
+
+# Ejercicio 3 
+
+**Mamíferos, Parte III.** Base de datos mammals del paquete openintro.
+
+(a) Queremos ajustar un modelo lineal para predecir el peso del cerebro de un mamífero (BrainWt) a partir del peso corporal (BodyWt) del animal. Habíamos visto en el Ejercicio 1.7 que si graficamos el peso del cerebro en función del peso corporal, el gráfico era bastante feo. Y que todo mejoraba tomando logaritmo (en cualquier base, digamos base 10) de ambas variables. Ajuste un modelo lineal para explicar a
+log10 (BrainWt) en función del log10 (BodyWt). Como antes, escriba el modelo teórico y el ajustado. Una observación: en el help del openitro se indica que la variable BrainWt está medida en kg., sin embargo, esta variable está medida en gramos.
+(b) Repita el scatterplot de las variables transformadas y superpóngale la recta ajustada.
+(c) La observación 45 corresponde a un chancho. Prediga el peso del cerebro del chancho con el modelo ajustado, sabiendo que pesa 192 kilos. Recuerde transformar al peso corporal del chancho antes de hacer cálculos. Marque esa observación en el gráfico, con color violeta.
+(d) La observación 34 corresponde a un ser humano. Prediga el peso del cerebro de un ser humano con el modelo ajustado, sabiendo que pesa 62 kilos. Recuerde transformar al peso corporal del chancho antes de hacer cálculos. Marque esa observación en el gráfico, con color rojo.
+
+```{r}
+
+```
+
