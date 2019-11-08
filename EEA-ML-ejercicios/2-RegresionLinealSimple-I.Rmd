@@ -73,7 +73,6 @@ Sin embargo, se observa una variación creciente. Conforme aumenta la circunfern
 
 ```{r}
 cadera <- lm(wgt ~ hip.gi, data=bdims)
-
 coef(cadera)
 ```
 
@@ -85,7 +84,7 @@ $$
 Modelo ajustado
 
 $$
-peso = \beta_0 + \beta_1(cadera_i)
+peso = -78.21054 + 1.52417(cadera_i)
 $$
 
 Si una persona aumenta un cm. de contorno de cadera, en promedio su peso aumentará 1.52417 kilogramos.
@@ -107,6 +106,27 @@ ggplot(bdims, aes(x=hip.gi, y=wgt, color=as.factor(sex))) +
 
 La recta describe bien los datos en general. 
 
+(e) Predicción para una persona cuya cadera mide 100 cm. Peso en kg:
+
+```{r}
+new_case = data.frame('hip.gi'=100)
+y_hat = predict(cadera, newdata = new_case)
+y_hat
+```
+
+(f) Residuo si la persona pesa 81 kg:
+
+```{r}
+residuo = (81 - 74.20646)
+residuo
+```
+
+*Pregunta:* ¿Por qué en la solución aparece al cuadrado?
+
+(g) Peso esperado para una población de adultos cuyo contorno de cadera mide 100 cm es de 74.20646 kg.
+
+*Nota:* Lo que cambia entre (e) y (g) son los intervalos. En (g) debería calcular el de confianza y en (e), el de predicción.
+
 # Ejercicio 2 
 
 **Medidas del cuerpo, Parte III.** Base de datos bdims del paquete openintro.
@@ -115,21 +135,143 @@ La recta describe bien los datos en general.
 (b) Ajuste un modelo lineal para explicar el peso por la altura. Escriba el modelo (con papel y lápiz, con betas y epsilones). Luego, escriba el modelo ajustado (sin epsilones). Interprete la pendiente estimada en términos del problema. Interprete la pendiente. ¿Es razonable el signo obtenido para la pendiente estimada? Superponer al scatterplot anterior la recta estimada.
 (c) La persona elegida en el ejercicio anterior, medía 187 cm. de alto, y pesaba 81 kg. Prediga su peso con el modelo que tiene a la altura como covariable. Calcule el residuo de dicha observación.
 
-```{r}
+**Respuestas:**
 
+(a) Diagrama de dispersión:
+
+```{r}
+ggplot(bdims, aes(x=hgt, y=wgt, color=as.factor(sex))) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas corporales en humanos", 
+       subtitle = "Peso en función de la altura", 
+       x = "Altura", y = "Peso") +
+  scale_color_manual(name = "Sexo",
+                     values = c("0" = "red", "1" = "blue"),
+                     labels = c("0" = "mujeres", "1" = "varones"))
+```
+
+(b) Modelo Lineal
+
+```{r}
+altura <- lm(wgt ~ hgt, data=bdims)
+coef(altura)
+```
+
+Modelo Real
+
+$$
+peso_i = \beta_0 + \beta_1(altura_i) + \epsilon_i
+$$
+Modelo ajustado
+
+$$
+peso = -105.011254 + 1.017617(altura_i)
+$$
+
+Si una persona aumenta un cm. de altura, en promedio su peso aumentará 1.017617 kilogramos. Es razonable.
+
+(d) Modelo sobre scatterplot:
+
+```{r}
+ggplot(bdims, aes(x=hgt, y=wgt, color=as.factor(sex))) +
+  geom_point() +
+  geom_smooth(method=lm , color="black", se=FALSE) +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas corporales en humanos", 
+       subtitle = "Peso en función de la altura", 
+       x = "Altura", y = "Peso") +
+  scale_color_manual(name = "Sexo",
+                     values = c("0" = "red", "1" = "blue"),
+                     labels = c("0" = "mujeres", "1" = "varones"))
+```
+
+(c) Predicción para una persona que mide 187 cm:
+
+```{r}
+hgt2pred = data.frame('hgt'=187)
+wgt_hgt = predict(altura, newdata = hgt2pred)
+wgt_hgt
+```
+
+Residuo si la persona en realidad pesaba 81 kg:
+
+```{r}
+81 - wgt_hgt
 ```
 
 # Ejercicio 3 
 
 **Mamíferos, Parte III.** Base de datos mammals del paquete openintro.
 
-(a) Queremos ajustar un modelo lineal para predecir el peso del cerebro de un mamífero (BrainWt) a partir del peso corporal (BodyWt) del animal. Habíamos visto en el Ejercicio 1.7 que si graficamos el peso del cerebro en función del peso corporal, el gráfico era bastante feo. Y que todo mejoraba tomando logaritmo (en cualquier base, digamos base 10) de ambas variables. Ajuste un modelo lineal para explicar a
-log10 (BrainWt) en función del log10 (BodyWt). Como antes, escriba el modelo teórico y el ajustado. Una observación: en el help del openitro se indica que la variable BrainWt está medida en kg., sin embargo, esta variable está medida en gramos.
+(a) Queremos ajustar un modelo lineal para predecir el peso del cerebro de un mamífero (BrainWt) a partir del peso corporal (BodyWt) del animal. Habíamos visto en el Ejercicio 1.7 que si graficamos el peso del cerebro en función del peso corporal, el gráfico era bastante feo. Y que todo mejoraba tomando logaritmo (en cualquier base, digamos base 10) de ambas variables. Ajuste un modelo lineal para explicar a log10 (BrainWt) en función del log10 (BodyWt). Como antes, escriba el modelo teórico y el ajustado. Una observación: en el help del openitro se indica que la variable BrainWt está medida en kg., sin embargo, esta variable está medida en gramos.
 (b) Repita el scatterplot de las variables transformadas y superpóngale la recta ajustada.
 (c) La observación 45 corresponde a un chancho. Prediga el peso del cerebro del chancho con el modelo ajustado, sabiendo que pesa 192 kilos. Recuerde transformar al peso corporal del chancho antes de hacer cálculos. Marque esa observación en el gráfico, con color violeta.
 (d) La observación 34 corresponde a un ser humano. Prediga el peso del cerebro de un ser humano con el modelo ajustado, sabiendo que pesa 62 kilos. Recuerde transformar al peso corporal del chancho antes de hacer cálculos. Marque esa observación en el gráfico, con color rojo.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
+attach(mammals)
 
+lm.mammasl <- lm(log10(BrainWt) ~ log10(BodyWt))
+
+coef(lm.mammasl)
 ```
 
+$$
+log(cerebro_i) = \beta_0 + \beta_1*log(cuerpo_i) + \epsilon_i
+$$
+
+$$
+log(cerebro_i) = 0.9271269 + 0.7516859*log(cuerpo_i) + \epsilon_i
+$$
+Cada vez que el peso del cuerpo, medido en kg, aumenta un 1%, el peso del cerebro, medido en gramos, aumenta un 75%
+
+(b) Scatterplot:
+
+```{r}
+ggplot(mammals, aes(x=log10(BodyWt), y=log10(BrainWt))) +
+  geom_point() +
+  geom_smooth(method=lm , color="blue", se=FALSE) +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas en mamíferos", 
+       "Peso cerebral en función del peso corporal", 
+       x = "Peso corporal ", y = "Peso cerebral")
+```
+
+
+(c) Predicción para un chancho de 192 kg:
+
+```{r}
+chancho = data.frame("BodyWt"=192)
+chanchoWt = predict(lm.mammasl, newdata = chancho)
+10**chanchoWt
+```
+
+```{r}
+ggplot(mammals, aes(x=log(BodyWt), y=log(BrainWt))) +
+  geom_point() +
+  geom_smooth(method=lm , color="blue", se=FALSE) +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas en mamíferos", 
+       "Peso cerebral en función del peso corporal", 
+       x = "Peso corporal ", y = "Peso cerebral") + 
+  geom_point(data = mammals[mammals$BodyWt==192,], color = "violet")
+```
+(d) Predicción para un humano de 62 kg:
+
+```{r}
+human = data.frame("BodyWt"=62)
+10**predict(lm.mammasl, newdata = human)
+```
+
+```{r}
+ggplot(mammals, aes(x=log(BodyWt), y=log(BrainWt))) +
+  geom_point() +
+  geom_smooth(method=lm , color="blue", se=FALSE) +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas en mamíferos", 
+       "Peso cerebral en función del peso corporal", 
+       x = "Peso corporal ", y = "Peso cerebral") + 
+  geom_point(data = mammals[mammals$BodyWt==192,], color = "violet") +
+  geom_point(data = mammals[mammals$BodyWt==62,], color = "red")
+```

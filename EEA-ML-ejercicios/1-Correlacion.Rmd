@@ -38,7 +38,9 @@ attach(mammals)
 
 ggplot(data=mammals, aes(x=BodyWt, y=BrainWt)) +
   geom_point() +
-  labs(title = "Scatterplot de Mamíferos", subtitle = "Peso cerebral en función del peso corporal", x = "Peso corporal ", y = "Peso cerebral")
+  labs(title = "Scatterplot de medidas en mamíferos", 
+       subtitle = "Peso cerebral en función del peso corporal", 
+       x = "Peso corporal ", y = "Peso cerebral")
 ```
 
 # Ejercicio 2
