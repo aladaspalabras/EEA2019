@@ -194,7 +194,7 @@ cor(mammals2$BodyWt, mammals2$BrainWt, method="pearson")
 (c) Nueva base con logaritmos:
 
 ```{r}
-mammalslog <- mammals2 %>% 
+mammalslog <- mammals %>% 
   select(BodyWt, BrainWt) %>% 
   mutate(BodyWt=log(BodyWt),
          BrainWt=log(BrainWt))
@@ -218,7 +218,7 @@ cor(mammalslog$BodyWt, mammalslog$BrainWt, method="pearson")
 (d) Correlación de Spearman para datos sin tranformar:
 
 ```{r}
-cor(mammals2$BodyWt, mammals2$BrainWt, method="spearman")
+cor(mammals$BodyWt, mammals$BrainWt, method="spearman")
 ```
 
 Correlación de Spearman para datos tranformados:

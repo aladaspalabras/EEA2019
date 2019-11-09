@@ -1,0 +1,271 @@
+---
+title: "Ejercicios de Regresión Lineal Simple - Parte I"
+author: "Macarena Fernandez Urquiza"
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+---
+<style type="text/css">
+div.main-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+body {
+text-align: justify}
+h1{
+  font-size: 15pt
+}
+</style>
+
+Cargo librerías.
+
+```{r, message=FALSE, warning=FALSE}
+library("datasets")
+library("dplyr")
+library("ggplot2")
+library("tidyverse")
+library("openintro")
+```
+
+
+# Ejercicio 1 
+
+**Medidas del cuerpo, Parte IV.** Base de datos bdims del paquete openintro.
+
+(a) Compare los ajustes realizados en los ejercicios 2.1 y 2.2. En ambos se ajusta un modelo lineal para explicar el peso medido en kilogramos (wgt): en el ejercicio 2.1 por la circunferencia de la cadera medida en centímetros (hip.gi), en el ejercicio 2.2 por la altura media en centímetros (hgt). ¿Cuál de los dos covariables explica mejor al peso? ¿Qué herramienta utiliza para compararlos?
+
+**Respuesta:**
+
+- Cadera: 
+Multiple R-squared:  0.5821,	Adjusted R-squared:  0.5813 
+
+- Altura: 
+Multiple R-squared:  0.5145,	Adjusted R-squared:  0.5136 
+
+La covariable que mejor explica el peso es la circunferencia de la cintura 
+
+Para comparar ambos modelos utilicé el R² ajustado dado que tiene en cuenta la significatividad de las covariables. Pero, en tanto los modelos tienen la misma cantidad de variablez explicativas, se podría haber utilizado el R² de igual modo.
+
+(b) Para el ajuste del peso usando la circunferencia de cadera como única covariable, halle un intervalo de confianza de nivel 0.95 cuando el contorno de cadera mide 100 cm. Compárelo con el intervalo de predicción para ese mismo contorno de cadera.
+
+**Respuesta:**
+
+```{r, message=FALSE, warning=FALSE}
+attach(bdims)
+
+lm.cintura = lm(wgt ~ hip.gi, data=bdims)
+new.input = data.frame("hip.gi"=100)
+
+IC = predict(lm.cintura, newdata = new.input, interval = "confidence", level=0.95)
+IP = predict(lm.cintura, newdata = new.input, interval = "prediction", level=0.95)
+
+IC
+IP
+```
+
+El intervalo de confianza es un intervalo de menor longitud.
+
+(c) Para el ajuste del peso usando la altura como única covariable, halle un intervalo de confianza de nivel 0.95 cuando la altura es de 176 cm. Compárelo con el intervalo de predicción para esa misma altura. ¿Cuál de los dos modelos da un intervalo de predicción más útil?
+
+**Respuesta:**
+
+```{r, message=FALSE, warning=FALSE}
+lm.altura = lm(wgt ~ hgt, data=bdims)
+new.input2 = data.frame("hgt"=175)
+
+IC2 = predict(lm.altura, newdata = new.input2, interval = "confidence", level=0.95)
+IP2 = predict(lm.altura, newdata = new.input2, interval = "prediction", level=0.95)
+
+IC2
+IP2
+```
+
+Aquí también el IC es más estrecho que el IP.
+
+El modelo que ajusta el precio según la circunferencia de la cadera da un IP más útil.
+
+(d) Construya un intervalo de confianza para el peso esperado cuando el contorno de cintura es de 80cm., 95cm., 125cm. de nivel 0.95. Estos tres intervalos, ¿tienen nivel simultáneo 0.95? Es decir, la siguiente afirmación ¿es verdadera o falsa? Justifique. En aproximadamente 95 de cada 100 veces que yo construya los IC basados en una (misma) muestra, cada uno de los 3 IC contendrán al verdadero valor esperado
+del peso.
+
+**Respuesta:*
+
+```{r}
+new.input3 = data.frame("hip.gi"=c(80,95,125))
+
+IC3 = predict(lm.cintura, newdata = new.input3, interval = "confidence", level=0.95)
+
+IC3
+```
+
+La afirmación es falsa. Los IC y los IP no tienen mismo nivel de confianza (95%) porque los test no son independientes.
+
+(e) Construya los intervalos de predicción para el peso esperado de nivel (individual) 0.95 cuando el contorno de cintura es de 80cm., 95cm. y 125cm. Compare las longitudes de estos tres intevalos entre sí. Compárelos con los IC de nivel individual.
+
+**Respuesta:*
+
+```{r}
+new.input4 = data.frame("hip.gi"=c(80,95,125))
+
+IC4 = predict(lm.cintura, newdata = new.input4, interval = "prediction", level=0.95)
+
+IC4
+```
+
+Los tres intervalos tienen la misma longitud. Ésta es mayor a la que presentaban los IC.
+
+(f) Construya los intervalos de confianza para el peso esperado de nivel simultáneo 0.95 cuando el contorno de cintura es de 80cm., 95cm. y 125cm.
+
+**Respuesta:*
+
+```{r}
+library("investr")
+
+new.input5 = data.frame("hgt"=c(80,95,125))
+IC5 = predFit(lm.altura, newdata = new.input5, interval = "confidence", 
+              level=0.95, adjust = 'Scheffe')
+
+IC5
+```
+
+(g) Estime la varianza del error (σ²) en ambos modelos.
+
+**Respuesta:*
+
+Estimador de la varianza:
+
+Si conociésemos σ²: σ²/n-1
+
+Como no conocemos σ², podemos usar lo que sí conocemos, los errores.
+
+estimador(σ²) = MSRes = SSRes/n-2 = Sumatoria[(Y-Ŷ)²]/n-2
+
+```{r}
+summary(lm.cintura)
+```
+
+```{r}
+MSRes_cintura = 8.636**2
+MSRes_cintura
+
+summary(lm.altura)
+```
+```{r}
+MSRes_altura = 9.308**2
+MSRes_altura
+```
+
+(h) Realice un scatterplot del peso en función del contorno de cintura. Superponga los IC y los IP al gráfico, de nivel 0.95 (no simultáneo).
+
+```{r}
+ggplot(bdims, aes(x=hip.gi, y=wgt)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Scatterplot de medidas corporales en humanos", 
+       subtitle = "Peso en función del contorno de cintura", 
+       x = "Cintura", y = "Peso") +
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE, alpha=0.5)
+```
+```{r}
+observeddata <- as.data.frame(predict(lm.cintura, interval = 'prediction'))
+observeddata %>% 
+  mutate(response=bdims$hip.gi)
+ggplot(data = observeddata, aes(x = 'response', y = 'fit', ymin = 'lwr', ymax = 'upr')) + 
+    geom_point() + 
+    geom_ribbon(alpha = .3)    # set opacity so points are visible
+```
+
+
+# Ejercicio 2 
+
+**Del Libro de Weisberg [2005].** Uno de los primeros usos de la regresión fue estudiar el traspaso de ciertos rasgos de generación en generación. Durante el período 1893-1898, E. S. Pearson organizó
+la recolección de las alturas de n = 1375 madres en el Reino Unido menores de 65 años y una de sus hijas adultas mayores de 18 años. Pearson y Lee (1903) publicaron los datos, y usaremos estos datos para examinar la herencia. Los datos (medidos en pulgadas) pueden verse en el archivo de datos heights.txt del paquete alr3 de R. Nos interesa estudiar el traspaso de madre a hija, así que miramos la altura de la madre, llamada Mheight, como la variable predictora y la altura de la hija, Dheight, como variable de respuesta. ¿Será que las madres más altas tienden a tener hijas más altas? ¿Las madres más bajas tienden a tener hijas más bajas?
+
+(a) Realice un scatterplot de los datos, con la altura de las madres en el eje horizontal.
+- i. Como lo que queremos es comparar las alturas de las madres con la de las hijas, necesitamos que en el scatterplot las escalas de ambos ejes sean las mismas (y que por lo tanto el gráfico sea cuadrado).
+- ii. Si cada madre e hija tuvieran exactamente la misma altura que su hija, ¾cómo luciría este scatterplot? Resuma lo que observa en este gráfico. Superpóngale la figura que describió como respuesta a la pregunta anterior. ¿Describe esta figura un buen resumen de la relación entre ambas variables?
+- iii. Los datos originales fueron redondeados a la pulgada más cercana. Si trabajamos directamente con ellos, veremos menos puntos en el scatterplot, ya que varios quedarán superpuestos. Una forma de lidiar con este problema es usar el jittering, es decir, sumar un pequeño número uniforme aleatorio se a cada valor. Los datos de la librería alr3 tienen un número aleatorio uniforme en el rango de -0.5 a +0.5 añadidos. Observemos que si se redondearan los valores del archivo heights se recuperarían los datos originalmente publicados. En base al scatterplot, ¾parecería ser cierto que las madres más altas suelen tener hijas más altas y viceversa con las más bajas?
+
+(b) Ajuste el modelo lineal a los datos. Indique el valor de la recta ajustada. Superpóngala al scatter plot. ¿Presenta visualmente un mejor ajuste que la recta identidad postulada en el ítem anterior? Dé los estimadores de los coeficientes de la recta, sus errores estándares, el coeficiente de determinación, estime
+la varianza de los errores. Halle un intervalo de confianza de nivel 0.95 para la pediente. Testee la hipótesis E(Dheight | Mheight) = β0 versus la alternativa que E (Dheight | Mheight) = β0 + β1Mheight. Escriba su conclusión al respecto en un par de renglones.
+(c) Prediga y obtenga un intervalo de predicción para la altura de una hija cuya madre mide 64 pulgadas. Observe que para que esta predicción sea razonable, hay que pensar que la madre vivía en Inglaterra a fines del siglo XIX.
+(d) Una pulgada equivale a 2.54cm. Convierta ambas variables a centímetros (Dheightcm y Mheightcm) y ajuste un modelo lineal a estas nuevas variables. ¾Deberían cambiar los estimadores de β0 y β1? ¿De qué manera? ¿Y los errores estándares? ¾Y los p-valores? ¿Y el coeficiente de determinación? ¿Y la estimación del desvío estándar de los errores? Compare ambos resultados, y verifique si sus conjeturas resultaron ciertas. En estadística, que un estimador se adapte al cambio de escala en las variables (covariable y respuesta) se dice: "el estimador es equivariante (afín y por escala)".
+
+# Ejercicio 3 
+
+**Simulación 1.** El objetivo de este ejercicio es generar datos para los cuales conocemos (y controlamos) el modelo del que provienen y la distribución que siguen.
+
+(a) Generar n = 22 datos que sigan el modelo lineal simple 
+
+Y = 10 + 5X + ε
+
+con ε ~ N(0, σ²), con σ² = 49. Las n observaciones las generamos independientes entre sí.
+
+- i. Para hacer esto en R, conviene primero definir un vector de longitud 22 de errores, que tenga distribución normal. La instrucción que lo hace es rnorm. Visualice los errores con un histograma de los mismos.
+- ii. Inventamos los valores de X. Para eso, generamos 22 valores con distribución uniforme entre 0 y 10, con la instrucción runif. Para no trabajar con tantos decimales, redondeamos estos valores a dos decimales, con la instrucción round().
+- iii. Ahora sí, definimos las Y usando todo lo anterior:
+
+Yi = 10 + 5Xi + εi
+
+para cada 1 ≤ i ≤ n = 22. Observar que nos hemos conseguido observaciones {(Xi
+, Yi)}1≤i≤n independientes que siguen el modelo
+
+Y = β0 + β1X + ε
+
+¿Cuánto valen los verdaderos β0 y β1?
+
+(b) Haga un scatterplot de los datos generados
+(c) Ajuste el modelo lineal, guarde el resultado obtenido en el objeto ajuste. Observe si los parámetros estimados son significativos. Calcule intervalos de confianza para la ordenada al origen y la pendiente, de nivel 0.95. Para esto recuerde los comandos: lm y confint. ¾Los verdaderos β0 y β1 pertenecen a dichos
+intervalos? ¿Cuánto dio la pendiente estimada, βb1? ¿En qué parte de la salida del ajuste lineal podemos encontrar el estimador de σ? ¿Cuánto debería valer?
+(d) Pídamosle al R que chequee si el 5 pertenece al IC de nivel 0.95 calculado en base a la muestra. El R nos devolverá "TRUE"" o "FALSE como respuesta a esta pregunta. La computadora codifica los "TRUE" como 1 y los "FALSE" como 0 para poder operar numéricamente con respuestas de este tipo. También guardemos la pendiente estimada en un objeto que se llame beta1est.
+(e) Superpóngale al scatterplot de los datos la recta verdadera (en azul) y la estimada en base a ellos (en rojo).
+
+# Ejercicio 4
+
+**Simulación 2.** Ahora hacemos un upgrade del desafío. Vamos a repetir lo hecho en el ejercicio 3.3 muchas veces, digamos lo replicaremos B = 1000 veces. Llamaremos replicación a cada repetición del ejercicio anterior. ¾Qué replicamos? Repetimos generar n = 22 observaciones del modelo (1) con errores normales (lo que llamamos elegir una muestra), ajustamos el modelo lineal, guardamos la pendiente estimada y nos fijamos si el 5 pertenece al intervalo de confianza para la pendiente.
+
+(a) ¿Puede usted anticipar, desde la teoría las respuestas de las preguntas que siguen?
+- i. Las pendientes estimadas en las B = 1000 replicaciones, ¾serán siempre iguales o cambiarán de replicación en replicación?
+- ii. ¿Alrededor de qué número variarán las pendientes estimadas en las 1000 replicaciones?
+- iii. Si hacemos un histograma de estas B = 1000 replicaciones, ¿a qué distribución debería parecerse?
+- iv. Aproximadamente, ¾qué porcentaje de los 1000 intervalos de confianza para la pendiente estimados a partir de las 1000 muestras cubrirá al verdadero valor de la pendiente?
+- v. Observe que si usted tuviera 22.000 observaciones de un modelo, nunca las dividiría en 1000 tandas de 22 observaciones para analizarlas: las consideraría todas juntas. Es por eso que este ejercicio es irreal, es simplemente una herramienta de aprendizaje.
+
+(b) Antes de empezar, definamos vectores donde guardaremos la información. De longitud B = 1000 cada uno, necesitamos un vector para los βb1 y otro para guardar las respuestas respecto de si el 5 pertenece o no al intervalo de confianza. Llamémoslos: beta1est e icbeta. Inicialmente ponemos un NA en cada coordenada de estos vectores (NA es, usualmente, la notación reservada para una observación faltante, son las siglas de not available). La instrucción rep del R (que repite un número o una acción un número fijo de veces resultará muy útil). 
+(c) Los valores de X1, . . . , X22 los dejaremos siempre fijos, en los valores que tomamos en el ejercicio 3.3. En cada replicación elegimos nuevos valores para los errores, y consecuentemente, nuevos valores para la variable respuesta Y1, . . . , Y22. No nos interesará guardar ni a los errores ni a las Y . Para cada muestra,
+corra el ajuste lineal y guarde la pendiente estimada y la respuesta en forma de true o false respecto de si el intervalo de confianza para la pendiente contiene al verdadero valor de la pendiente. Todo esto puede realizarse con la instrucción for del R, que no es la manera óptima de programar, pero sí es la más comprensible.
+(d) Haga un histograma de las pendientes estimadas. ¾Qué distribución parecen tener los datos?
+(e) ¿Qué proporción de los intervalos de conanza construidos contiene al verdadero valor de la pendiente?
+
+# Ejercicio 5 
+
+**Mamíferos, Parte IV.** Conjunto de datos mammals del paquete openintro. Vimos, en los ejercicios 1.7 y 2.3, que el scatter plot de los datos originales no tiene la forma elipsoidal (o de pelota de rugby, más o menos achatada) que podemos describir con un modelo de regresión lineal. Por ello, ajustamos un modelo lineal para explicar a log10 (BrainWt) en función del log10 (BodyWt):
+
+log10 (BrainWt) = β0 + β1 log10 (BodyWt) + ε
+
+Una observación: en el help del openitro se indica que la variable BrainWt está medida en kg., sin embargo, esta variable está medida en gramos.
+
+(a) A partir de log10 (10) = 1 y de recordar que log10 (ab) = log10 (a) + log10 (b), podemos observar que en el modelo lineal (2) aumentar una unidad de log10 (BodyWt) es lo mismo que multiplicar a BodyWt por 10. Si dos animales difieren en el BodyWt por un factor de diez, dé un intervalo del 95 % de confianza para la diferencia en el log10 (BrainWt) para estos dos animales. 
+(b) Para un mamífero que no está en la base de datos, cuyo peso corporal es de 100 kg., obtenga la predicción y
+un intervalo de nivel 95 % de predicción del log10 (BrainWt). Prediga el peso del cerebro de dicho animal.
+Ahora queremos convertir el intervalo de predicción del log10 (BrainWt) en un intervalo de predicción
+para el BrainWt. Para eso, observemos que si el intervalo (a, b) es un intevalo de predicción de nivel
+95 % para log10 (BrainWt), entonces, un intervalo para el BrainWt está dado por
+10a
+, 10b. ¿Por qué? Use este resultado para obtener un intervalo de predicción del peso del cerebro del mamífero cuyo peso corporal es 100kg. Mirando los valores numéricos obtenidos, ¾parece muy útil el resultado obtenido?
+(c) Observe que si quisiéramos construir el intervalo de confianza de nivel 95 % para el peso del cerebro esperado de un mamífero cuyo peso corporal es es 100kg, no es posible hacer la conversión del ítem anterior de manera automática, ya que para cualquier funcion g en general 
+
+E [g (Y )] != g (E [Y ])
+
+Si se quiere construir dicho intervalo, habrá que apelar a otras herramientas, por ejemplo el desarrollo
+de Taylor de la función g.
+
+# Ejercicio 6 
+
+**Del Libro de Weisberg [2005].** La perca americana o lubina (smallmouth bass) es un pez que vive en lagos y cuya pesca constituye una actividad bastante difundida. En Estados Unidos, para garantizar un equilibrio saludable entre la conservación del medio ambiente y la explotación humana se implementan distintas políticas de regulación de su pesca. Entender los patrones de crecimiento de los peces es de gran ayuda para decidir políticas de conservación de stock de peces y de permisos de pesca. Para ello, la base de datos wblake del paquete alr3 registra la longitud en milímetros al momento de la captura (Length) y la edad (Age) para n = 439 percas medidas en el Lago West Bearskin en Minnesota, EEUU, en 1991. Ver help(wblake) para más información de los datos. Las escamas de los peces tienen anillos circulares como los árboles, y contándolos se puede determinar la edad (en años) de un pez. La base de datos también tiene la variable Scale que mide el radio de las escamas en mm., que no utilizaremos por ahora.
+
+(a) Hacer un scatter plot de la longitud (Length) en función de la edad (Age). ¾Qué observa? La apariencia de este gráfico es diferente de los demás gráficos de dispersión que hemos hecho hasta ahora. La variable predictora Age sólo puede tomar valores enteros, ya que se calculan contando los anillos de las esacamas, de modo que realmente estamos graficando ocho poblaciones distintas de peces. Como es esperable, la longitud crece en general con la edad, pero la longitud del pez más largo de un año de edad excede la longitud del pez más corto de cuatro años  de edad, por lo que conocer la edad de un pez no nos permitirá predecir su longitud de forma exacta.
+(b) Calcule las medias y los desvíos estándares muestrales para cada uno de las ocho subpoblaciones de los datos de las percas. Dibuje un boxplot de la longitud para cada edad de las percas, todos en la misma escala. Describa lo que ve. La longitud, ¿parece aumentar con la edad? La dispersión de la longitud, ¿parece mantenerse más o menos constante con la edad? ¿O crece? ¿O decrece? 
+(c) Ajuste un modelo lineal para explicar la longitud (Length) en función de la edad (Age). ¿Resulta significativa la pendiente? Resuma la bondad del ajuste con el R2. Superponga la recta estimada al gráfico de dispersión, y también las medias muestrales por grupos. Halle el estimador de σ que proporciona el modelo lineal. ¿A qué valor debiera parecerse? ¿Se parece? Observar que no debiera parecerse a sd(Length). ¿Le parece que el ajuste obtenido por el modelo lineal es satisfactorio?
+(d) Obtenga intervalos de confianza de nivel 95 % para la longitud media a edades 2, 4 y 6 años (no simultáneos). ¿Sería correcto obtener IC para la longitud media a los 9 años con este conjunto de datos?

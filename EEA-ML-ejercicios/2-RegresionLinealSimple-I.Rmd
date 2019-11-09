@@ -73,7 +73,7 @@ Sin embargo, se observa una variación creciente. Conforme aumenta la circunfern
 
 ```{r}
 cadera <- lm(wgt ~ hip.gi, data=bdims)
-coef(cadera)
+summary(cadera)
 ```
 
 Modelo Real
@@ -155,7 +155,7 @@ ggplot(bdims, aes(x=hgt, y=wgt, color=as.factor(sex))) +
 
 ```{r}
 altura <- lm(wgt ~ hgt, data=bdims)
-coef(altura)
+summary(altura)
 ```
 
 Modelo Real
