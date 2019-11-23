@@ -1,0 +1,34 @@
+---
+title: "Trabajo Práctico N°3"
+author: "Macarena Fernandez Urquiza"
+output: 
+  html_notebook: 
+    toc: true
+    toc_float: true
+    depth: 3
+    includes:
+      before_body: header.html
+      after_body: footer.html
+---
+</style>
+<style type="text/css">
+div.main-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+body {
+text-align: justify}
+h1{
+  font-size: 19pt;
+  margin-top: 70px;
+}
+h2{
+  font-size: 17pt;
+}
+h3{
+  font-size: 15pt
+}
+</style>
+
+Se cargan las librerías que se utilizarán a lo largo del trabajo
