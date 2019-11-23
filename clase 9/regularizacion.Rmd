@@ -318,6 +318,8 @@ lasso.mod=glmnet(x=nba_mtx, # Matriz de regresores
                  alpha=1, # Indicador del tipo de regularizacion
                  standardize = F) # Que esta haciendo este parametro?
                  
+## como ni siquiera tenemos una intuición de dónde vive lambda, este modelo por default hace CV
+## y va probando con distintos lambda (el modelo solo determina el rango de prueba)
 lasso_coef = lasso.mod %>% tidy()
 
 lasso_coef
@@ -359,6 +361,9 @@ lasso_coef %>% filter(term %in% c("G", "GS", "MP", "FGA", "X2PA", "TRB", "PF", "
   ggplot(., aes(log(lambda), estimate, group=term, color=term)) + geom_line(size=1) + theme_bw() +
   labs(title="Lasso sin Intercepto", y="Coeficientes", subtitle= "\"Mejores\" variables") +
   scale_color_brewer(palette = 'Set1')
+
+## sobreviven aquellas que tienen betas más baratos, las que tiene beta más chico
+## como un movimiento en una unidad de esas es más importante, sobreviven a la selección del Lasso
 ```
 
 Vemos que las variables que "sobreviven" para mayores valores de lambda son las que están medidas con una escala mayor.
@@ -457,6 +462,8 @@ En glm.fit tenemos la cantidad de variables, el valor de lambda y el porcentaje 
 **Grafico Base**
 ```{r}
 plot(lasso_cv)
+
+## líneas verticales: lambda mínimo y 1SD (que es el más parsimonioso porque nos deja menos variables)
 ```
 
 El gráfico nos muestra la media del MSE con su limite superior e inferior y la cantidad de varaibles que sobreviven para cada valor de lambda.
