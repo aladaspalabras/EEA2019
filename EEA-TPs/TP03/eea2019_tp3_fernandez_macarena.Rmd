@@ -38,6 +38,9 @@ library("tidyverse")
 library("data.table")
 library("ggplot2")
 library("GGally")
+library("modelr")
+library("gridExtra")
+library("caret")
 ```
 
 # 1. Preparación de los datos
@@ -92,12 +95,175 @@ ggpairs(dataset.preproc[variables],
 
 ## 1.5. Mostrar la distribución de clase (Sobrevivientes vs No Sobrevivientes)
 
+```{r}
+ggplot(dataset.preproc, 
+       aes(x=Survived, fill=Survived)) + 
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
+  labs(title = "Supervivencia - Distribución de clases",
+       y = "Frecuencia absoluta") +
+  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+                   labels=c("No sobrevivientes","Sobrevivientes")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+# porcentaje de sobrevivientes
+round((342 / nrow(dataset.preproc)) * 100,0)
+```
+
+
 ## 1.6. Dividir al dataset en conjunto de entrenamiento (70% de los datos) y validación (30% de los datos). Volver a analizar la distribución de clase para chequear que este balanceado
 
+Realizamos una partición entre dataset de entrenamiento (70%) y testeo (30%) usando la función resample_partition del paquete modelr
+
+```{r}
+train_valid <- dataset.preproc %>% resample_partition(c(train=0.7,valid=0.3))
+
+trainsetM <- train_valid$train %>% as_tibble()
+validationsetM <- train_valid$valid %>% as_tibble()
+
+trainplotM <- ggplot(trainsetM, 
+       aes(x=Survived, fill=Survived)) + 
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
+  labs(title = "Conjunto de entrenamiento",
+       y = "Frecuencia absoluta") +
+  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+                   labels=c("No sobrevivientes","Sobrevivientes")) +
+  theme(legend.position = "none")
+
+validplotM <- ggplot(validationsetM, 
+       aes(x=Survived, fill=Survived)) + 
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 24)) +
+  labs(title = "Conjunto de validación",
+       y = "Frecuencia absoluta") +
+  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+                   labels=c("No sobrevivientes","Sobrevivientes")) +
+  theme(legend.position = "none")
+
+grid.arrange(
+  trainplotM,
+  validplotM,
+  nrow = 1,
+  top = "Supervivencia - Distribución de clases - modelr"
+)
+```
+
+```{r}
+# porcentaje de sobrevivientes en set de entrenamiento
+round((249 / nrow(trainset)) * 100,0)
+
+# porcentaje de sobrevivientes en set de validación
+round((93 / nrow(validationset)) * 100,0)
+```
+
+El conjunto de validación tiene 5% menos de sobrevivientes.
+
+Se opta por utilizar la función createDataPartition de la librería caret.
+
+```{r}
+trainIndex <- createDataPartition(dataset.preproc$Survived, p = .7, 
+                                  list = FALSE, 
+                                  times = 1)
+
+trainsetC <- dataset.preproc[ trainIndex,]
+validationsetC  <- dataset.preproc[-trainIndex,]
+
+trainplotC <- ggplot(trainsetC, 
+       aes(x=Survived, fill=Survived)) + 
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
+  labs(title = "Conjunto de entrenamiento",
+       y = "Frecuencia absoluta") +
+  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+                   labels=c("No sobrevivientes","Sobrevivientes")) +
+  theme(legend.position = "none")
+
+validplotC <- ggplot(validationsetC, 
+       aes(x=Survived, fill=Survived)) + 
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 22)) +
+  labs(title = "Conjunto de validación",
+       y = "Frecuencia absoluta") +
+  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+                   labels=c("No sobrevivientes","Sobrevivientes")) +
+  theme(legend.position = "none")
+
+grid.arrange(
+  trainplotC,
+  validplotC,
+  nrow = 1,
+  top = "Supervivencia - Distribución de clases - caret"
+)
+
+```
+
+```{r}
+# porcentaje de sobrevivientes en set de entrenamiento
+round((240 / nrow(trainsetC)) * 100,0)
+
+# porcentaje de sobrevivientes en set de validación
+round((102 / nrow(validationsetC)) * 100,0)
+```
 
 # 2. Predicciones
 
+## 2.1. Realizar un modelo de regresión logística para predecir la supervivencia en función de Pclass, Sex y Age. Usar solo el dataset de entrenamiento
+
+```{r}
+glm.fit <- glm(Survived ~ Pclass + Sex + Age, data = trainsetC, family = "binomial")
+
+summary(glm.fit)
+```
+
+## 2.2. Dar una breve interpretación de los coeficientes y su significatividad
+
+TO-DO
+
+## 2.3. ¿Quién tiene una mayor probabilidad de supervivencia? Rose que es una mujer de 17 años que viaja en primera clase o Jack que es un hombre de 20 años viajando en tercera clase
+
+```{r}
+rose <- data.frame(Pclass = as.factor(1), 
+                   Sex = "female",
+                   Age = 17)
+
+rose.prob <- predict(object = glm.fit, newdata = rose, type = "response")
+
+round(rose.prob,3)
+
+jack <- data.frame(Pclass = as.factor(3),
+                   Sex = "male",
+                   Age = 20)
+
+jack.prob <- predict(object = glm.fit, newdata = jack, type = "response")
+
+round(jack.prob,3)
+```
+
 # 3. Generación de modelos
+
+## 3.1. Generar 3 modelos de regresión logística sobre el dataset de entrenamiento utilizando diferentes combinaciones de variables. Al menos dos modelos deben ser multivariados
+
+```{r}
+logit_formulae <- formulas(.response = ~Survived,
+                           m1 = ~ Pclass + Sex, 
+                           m2 = ~ Pclass + Embarked + Sex + Age,
+                           m3 = ~ Embarked + Sex
+                         )
+
+models <- data_frame(logit_formulae) %>% 
+  mutate(models = names(logit_formulae), 
+         expression = paste(logit_formulae), 
+         mod = map(logit_formulae, ~glm(.,family = 'binomial', data = trainsetC))) 
+
+models
+```
+
+## 3.2. Ordenar por la deviance los 3 modelos creados en el punto 3)a) y el creado en el punto 2)a) y seleccionar el mejor modelo en términos de la deviance explicada
+
 
 # 4. Evaluación del modelo
 
