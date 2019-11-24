@@ -31,4 +31,76 @@ h3{
 }
 </style>
 
-Se cargan las librerías que se utilizarán a lo largo del trabajo
+Se cargan las librerías que se utilizarán a lo largo del trabajo.
+
+```{r, message=FALSE, warning=FALSE}
+library("tidyverse")
+library("data.table")
+library("ggplot2")
+library("GGally")
+```
+
+# 1. Preparación de los datos
+
+## 1.1. Leer el archivo titanic_complete_train.csv y mostrar su estructura
+
+Se cargan los datos y se lee su estructura.
+
+```{r}
+dataset <- fread("titanic_complete_train.csv")
+
+dataset
+```
+
+```{r}
+glimpse(dataset)
+```
+
+## 1.2. Seleccionar las variables PassengerId, Survived, Pclass, Sex, Age, SibSp,Parch, Fare y Embarked
+
+```{r}
+dataset.filtrado <- dataset %>% 
+  select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked)
+
+dataset.filtrado
+```
+
+## 1.3. Transformar las variables Survived, Pclass y Embarked a factor
+
+```{r}
+dataset.preproc <- dataset.filtrado %>% 
+  mutate(Survived = as_factor(Survived),
+         Pclass = as_factor(Pclass),
+         Embarked = as_factor(Embarked))
+
+dataset.preproc
+```
+
+```{r}
+glimpse(dataset.preproc)
+```
+
+## 1.4. Realizar un gráfico de ggpairs para las variables Survived, Pclass, Sex, Age y Fare e interpretarlo
+
+```{r, message=FALSE, warning=FALSE}
+variables <- c('Survived','Pclass','Sex','Age','Fare')
+
+ggpairs(dataset.preproc[variables],
+        mapping = aes(colour= Survived)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_bw()
+```
+
+## 1.5. Mostrar la distribución de clase (Sobrevivientes vs No Sobrevivientes)
+
+## 1.6. Dividir al dataset en conjunto de entrenamiento (70% de los datos) y validación (30% de los datos). Volver a analizar la distribución de clase para chequear que este balanceado
+
+
+# 2. Predicciones
+
+# 3. Generación de modelos
+
+# 4. Evaluación del modelo
+
+# 5. Elección del punto de corte
+
+# 6. Dataset de testeo
