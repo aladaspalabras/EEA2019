@@ -41,6 +41,8 @@ library("GGally")
 library("modelr")
 library("gridExtra")
 library("caret")
+library("broom")
+library("pROC")
 ```
 
 # 1. Preparación de los datos
@@ -154,10 +156,10 @@ grid.arrange(
 
 ```{r}
 # porcentaje de sobrevivientes en set de entrenamiento
-round((249 / nrow(trainset)) * 100,0)
+round((249 / nrow(trainsetM)) * 100,0)
 
 # porcentaje de sobrevivientes en set de validación
-round((93 / nrow(validationset)) * 100,0)
+round((93 / nrow(validationsetM)) * 100,0)
 ```
 
 El conjunto de validación tiene 5% menos de sobrevivientes.
@@ -249,9 +251,10 @@ round(jack.prob,3)
 
 ```{r}
 logit_formulae <- formulas(.response = ~Survived,
-                           m1 = ~ Pclass + Sex, 
-                           m2 = ~ Pclass + Embarked + Sex + Age,
-                           m3 = ~ Embarked + Sex
+                           model0 = ~ Pclass + Sex + Age,
+                           model1 = ~ Pclass + Sex, 
+                           model2 = ~ Pclass + Embarked + Sex + Age,
+                           model3 = ~ Embarked + Sex
                          )
 
 models <- data_frame(logit_formulae) %>% 
@@ -262,11 +265,142 @@ models <- data_frame(logit_formulae) %>%
 models
 ```
 
+
+```{r}
+models %>% 
+  filter(grepl('1|2|3', models)) %>% 
+  mutate(tidy = map(mod,tidy)) %>%  
+  unnest(tidy, .drop = TRUE) %>% 
+  mutate(estimate=round(estimate,5),
+         p.value=round(p.value,4))
+```
+
+TO-DO: analizar modelos
+
 ## 3.2. Ordenar por la deviance los 3 modelos creados en el punto 3)a) y el creado en el punto 2)a) y seleccionar el mejor modelo en términos de la deviance explicada
 
+```{r}
+models <- models %>% 
+  mutate(glance = map(mod,glance))
 
-# 4. Evaluación del modelo
+models %>% 
+  unnest(glance, .drop = TRUE) %>%
+  mutate(perc_explained_dev = 1-(deviance/null.deviance)) %>% 
+  select(-c(models, df.null, AIC, BIC)) %>% 
+  arrange(deviance)
+```
+
+Mejor modelo: modelo2
+
+# 4. Evaluación del 
+
+## 4.1. Realizar el gráfico de curva ROC y obtener el AUC para el modelo elegido. Interpretar el gráfico
+
+```{r}
+models <- models %>% 
+  mutate(pred= map(mod,augment, type.predict = "response"))
+
+prediction <- models %>% 
+  filter(grepl('2', models)) %>% 
+  unnest(pred, .drop=TRUE)
+ 
+roc_data <- roc(response=prediction$Survived, predictor=prediction$.fitted)
+
+ggroc(roc_data, size=1, color="turquoise3") + 
+  geom_abline(slope = 1, intercept = 1, linetype='dashed') +
+  theme_bw() + 
+  labs(title='Curva ROC', 
+       subtitle = 'Modelo2: Survived ~ Pclass + Embarked + Sex + Age')
+
+```
+
+```{r}
+print(paste('AUC: Modelo2: Survived~Pclass+Embarked+Sex+Age:', roc_data$auc))
+```
+
+## 4.2. Realizar un violin plot e interpretar
+
+```{r}
+ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survived))) + 
+  geom_violin() +
+  theme_bw() +
+  guides(fill=FALSE) +
+  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+                   labels=c("No sobrevivientes","Sobrevivientes")) +
+  labs(title='Violin plot', 
+       subtitle = 'Modelo2: Survived ~ Pclass + Embarked + Sex + Age', 
+       y='Probabilidad predicha')
+```
+
 
 # 5. Elección del punto de corte
+
+## 5.1. Sobre el dataset de validación realizar un gráfico de Accuracy, Specificity, Recall y Precision en función del punto de corte
+
+
+```{r}
+valid <- models %>% 
+  filter(grepl('2',models)) %>% 
+  mutate(val= map(mod,augment, newdata=validationsetC, type.predict = "response")) %>% 
+  unnest(val, .drop=TRUE)
+
+valid
+```
+
+
+```{r}
+prediction_metrics <- function(cutoff, predictions=valid){
+  table <- predictions %>% 
+    mutate(predicted_class=if_else(.fitted>cutoff, 1, 0) %>% as.factor(),
+           Survived= factor(Survived))
+  confusionMatrix(table(table$predicted_class, table$Survived), positive = "1") %>%
+    tidy() %>%
+    select(term, estimate) %>%
+    filter(term %in% c('accuracy', 'sensitivity', 'specificity', 'precision','recall')) %>%
+    mutate(cutoff=cutoff)
+}
+
+cutoffs = seq(0.01,0.95,0.01)
+logit_pred= map_dfr(cutoffs, prediction_metrics) %>% mutate(term=as.factor(term))
+```
+
+
+```{r}
+cutoffs = seq(0.01,0.95,0.01)
+
+table <- valid %>% 
+  mutate(predicted_class=if_else(.fitted>cutoffs, 1, 0))
+
+
+table
+```
+
+
+```{r}
+confusionMatrix(table(table$predicted_class, table$Survived), positive = "1") %>% 
+  tidy() %>% 
+  select(term, estimate) %>% 
+  filter(term %in% c('accuracy', 'sensitivity', 'specificity', 'precision','recall'))
+```
+
+
+```{r}
+confusionMatrix(table(table$predicted_class, table$Survived), positive = "1") %>%
+    tidy() %>%
+    select(term, estimate) %>%
+    filter(term %in% c('accuracy', 'sensitivity', 'specificity', 'precision','recall')) %>%
+    mutate(cutoff=cutoffs)
+```
+
+
+## 5.2. Elegir un punto de corte y explicar su decisión
+
+
+
+## 5.3. Obtener la matriz de confusión con el modelo y punto de corte elegidos. Interpretarla
+
+```{r}
+
+```
 
 # 6. Dataset de testeo
