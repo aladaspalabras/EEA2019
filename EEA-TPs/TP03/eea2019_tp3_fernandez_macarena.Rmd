@@ -33,6 +33,11 @@ h3{
 
 Se cargan las librerías que se utilizarán a lo largo del trabajo.
 
+```{r}
+rm(list=ls())
+```
+
+
 ```{r, message=FALSE, warning=FALSE}
 library("tidyverse")
 library("data.table")
@@ -43,6 +48,7 @@ library("gridExtra")
 library("caret")
 library("broom")
 library("pROC")
+set.seed(1912)
 ```
 
 # 1. Preparación de los datos
@@ -64,25 +70,25 @@ glimpse(dataset)
 ## 1.2. Seleccionar las variables PassengerId, Survived, Pclass, Sex, Age, SibSp,Parch, Fare y Embarked
 
 ```{r}
-dataset.filtrado <- dataset %>% 
+dataset <- dataset %>% 
   select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked)
 
-dataset.filtrado
+dataset
 ```
 
 ## 1.3. Transformar las variables Survived, Pclass y Embarked a factor
 
 ```{r}
-dataset.preproc <- dataset.filtrado %>% 
+dataset <- dataset %>% 
   mutate(Survived = as_factor(Survived),
          Pclass = as_factor(Pclass),
          Embarked = as_factor(Embarked))
 
-dataset.preproc
+dataset
 ```
 
 ```{r}
-glimpse(dataset.preproc)
+glimpse(dataset)
 ```
 
 ## 1.4. Realizar un gráfico de ggpairs para las variables Survived, Pclass, Sex, Age y Fare e interpretarlo
@@ -90,7 +96,7 @@ glimpse(dataset.preproc)
 ```{r, message=FALSE, warning=FALSE}
 variables <- c('Survived','Pclass','Sex','Age','Fare')
 
-ggpairs(dataset.preproc[variables],
+ggpairs(dataset[variables],
         mapping = aes(colour= Survived)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_bw()
 ```
@@ -98,7 +104,7 @@ ggpairs(dataset.preproc[variables],
 ## 1.5. Mostrar la distribución de clase (Sobrevivientes vs No Sobrevivientes)
 
 ```{r}
-ggplot(dataset.preproc, 
+ggplot(dataset, 
        aes(x=Survived, fill=Survived)) + 
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
@@ -112,7 +118,7 @@ ggplot(dataset.preproc,
 
 ```{r}
 # porcentaje de sobrevivientes
-round((342 / nrow(dataset.preproc)) * 100,0)
+round((342 / nrow(dataset)) * 100,0)
 ```
 
 
@@ -121,12 +127,12 @@ round((342 / nrow(dataset.preproc)) * 100,0)
 Realizamos una partición entre dataset de entrenamiento (70%) y testeo (30%) usando la función resample_partition del paquete modelr
 
 ```{r}
-train_valid <- dataset.preproc %>% resample_partition(c(train=0.7,valid=0.3))
+train_valid <- dataset %>% resample_partition(c(train=0.7,valid=0.3))
 
-trainsetM <- train_valid$train %>% as_tibble()
-validationsetM <- train_valid$valid %>% as_tibble()
+trainset <- train_valid$train %>% as_tibble()
+validationset <- train_valid$valid %>% as_tibble()
 
-trainplotM <- ggplot(trainsetM, 
+trainplot <- ggplot(trainset, 
        aes(x=Survived, fill=Survived)) + 
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
@@ -136,7 +142,7 @@ trainplotM <- ggplot(trainsetM,
                    labels=c("No sobrevivientes","Sobrevivientes")) +
   theme(legend.position = "none")
 
-validplotM <- ggplot(validationsetM, 
+validplot <- ggplot(validationset, 
        aes(x=Survived, fill=Survived)) + 
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 24)) +
@@ -147,76 +153,28 @@ validplotM <- ggplot(validationsetM,
   theme(legend.position = "none")
 
 grid.arrange(
-  trainplotM,
-  validplotM,
+  trainplot,
+  validplot,
   nrow = 1,
-  top = "Supervivencia - Distribución de clases - modelr"
+  top = "Supervivencia - Distribución de clases"
 )
 ```
 
 ```{r}
 # porcentaje de sobrevivientes en set de entrenamiento
-round((249 / nrow(trainsetM)) * 100,0)
+round((240 / nrow(trainset)) * 100,0)
 
 # porcentaje de sobrevivientes en set de validación
-round((93 / nrow(validationsetM)) * 100,0)
+round((102 / nrow(validationset)) * 100,0)
 ```
 
-El conjunto de validación tiene 5% menos de sobrevivientes.
-
-Se opta por utilizar la función createDataPartition de la librería caret.
-
-```{r}
-trainIndex <- createDataPartition(dataset.preproc$Survived, p = .7, 
-                                  list = FALSE, 
-                                  times = 1)
-
-trainsetC <- dataset.preproc[ trainIndex,]
-validationsetC  <- dataset.preproc[-trainIndex,]
-
-trainplotC <- ggplot(trainsetC, 
-       aes(x=Survived, fill=Survived)) + 
-  geom_bar() +
-  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
-  labs(title = "Conjunto de entrenamiento",
-       y = "Frecuencia absoluta") +
-  scale_x_discrete("Supervivencia", breaks = c("0","1"),
-                   labels=c("No sobrevivientes","Sobrevivientes")) +
-  theme(legend.position = "none")
-
-validplotC <- ggplot(validationsetC, 
-       aes(x=Survived, fill=Survived)) + 
-  geom_bar() +
-  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 22)) +
-  labs(title = "Conjunto de validación",
-       y = "Frecuencia absoluta") +
-  scale_x_discrete("Supervivencia", breaks = c("0","1"),
-                   labels=c("No sobrevivientes","Sobrevivientes")) +
-  theme(legend.position = "none")
-
-grid.arrange(
-  trainplotC,
-  validplotC,
-  nrow = 1,
-  top = "Supervivencia - Distribución de clases - caret"
-)
-
-```
-
-```{r}
-# porcentaje de sobrevivientes en set de entrenamiento
-round((240 / nrow(trainsetC)) * 100,0)
-
-# porcentaje de sobrevivientes en set de validación
-round((102 / nrow(validationsetC)) * 100,0)
-```
 
 # 2. Predicciones
 
 ## 2.1. Realizar un modelo de regresión logística para predecir la supervivencia en función de Pclass, Sex y Age. Usar solo el dataset de entrenamiento
 
 ```{r}
-glm.fit <- glm(Survived ~ Pclass + Sex + Age, data = trainsetC, family = "binomial")
+glm.fit <- glm(Survived ~ Pclass + Sex + Age, data = trainset, family = "binomial")
 
 summary(glm.fit)
 ```
@@ -260,7 +218,7 @@ logit_formulae <- formulas(.response = ~Survived,
 models <- data_frame(logit_formulae) %>% 
   mutate(models = names(logit_formulae), 
          expression = paste(logit_formulae), 
-         mod = map(logit_formulae, ~glm(.,family = 'binomial', data = trainsetC))) 
+         mod = map(logit_formulae, ~glm(.,family = 'binomial', data = trainset))) 
 
 models
 ```
@@ -341,7 +299,7 @@ ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survive
 ```{r}
 valid <- models %>% 
   filter(grepl('2',models)) %>% 
-  mutate(val= map(mod,augment, newdata=validationsetC, type.predict = "response"))
+  mutate(val= map(mod,augment, newdata=validationset, type.predict = "response"))
 
 valid.results <-  valid %>%
   unnest(val, .drop=TRUE)
@@ -378,7 +336,7 @@ ggplot(logit_pred, aes(cutoff,estimate, group=term, color=term)) + geom_line(siz
 ## 5.3. Obtener la matriz de confusión con el modelo y punto de corte elegidos. Interpretarla
 
 ```{r}
-sel_cutoff = 0.40
+sel_cutoff = 0.4
 
 table <- valid.results %>% 
   mutate(predicted_class=if_else(.fitted>sel_cutoff, 1, 0) %>% as.factor(), 
@@ -389,3 +347,41 @@ confusionMatrix(table(table$Survived, table$predicted_class), positive = "1")
 ```
 
 # 6. Dataset de testeo
+
+## 6.1. Leer el archivo titanic_complete_test.csv y transformar las variables Survived, Pclass y Embarked a factor
+
+```{r}
+testset <- fread("titanic_complete_test.csv")
+
+testset <- testset %>% 
+  select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked) %>% 
+  mutate(Survived = as_factor(Survived),
+         Pclass = as_factor(Pclass),
+         Embarked = as_factor(Embarked))
+
+glimpse(testset)
+```
+
+## 6.2. Con el modelo y punto de corte elegidos clasificar a las personas del dataset de testing.
+
+```{r}
+sel_cutoff = 0.4
+
+model2test <- glm(logit_formulae$model2, family = 'binomial', data = dataset)
+
+# Agregamos la predicciones al dataset de testeo
+test.table = augment(x=model2test, newdata=testset, type.predict='response') 
+
+# Clasificamos utilizamos el punto de corte
+test.table = test.table %>% 
+  mutate(predicted_class=if_else(.fitted>sel_cutoff, 1, 0) %>% as.factor(),
+         Survived= factor(Survived))
+```
+
+## 6.3. Obtener la matriz de confusión y comparar con la obtenida en el punto 5)c).
+
+```{r}
+# Creamos la matriz de confusión
+confusionMatrix(table(test.table$Survived, test.table$predicted_class), positive = "1")
+```
+
