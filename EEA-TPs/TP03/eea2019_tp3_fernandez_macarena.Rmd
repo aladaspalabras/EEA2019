@@ -341,15 +341,17 @@ ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survive
 ```{r}
 valid <- models %>% 
   filter(grepl('2',models)) %>% 
-  mutate(val= map(mod,augment, newdata=validationsetC, type.predict = "response")) %>% 
+  mutate(val= map(mod,augment, newdata=validationsetC, type.predict = "response"))
+
+valid.results <-  valid %>%
   unnest(val, .drop=TRUE)
 
-valid
+valid.results
 ```
 
 
 ```{r}
-prediction_metrics <- function(cutoff, predictions=valid){
+prediction_metrics <- function(cutoff, predictions=valid.results){
   table <- predictions %>% 
     mutate(predicted_class=if_else(.fitted>cutoff, 1, 0) %>% as.factor(),
            Survived= factor(Survived))
@@ -360,47 +362,30 @@ prediction_metrics <- function(cutoff, predictions=valid){
     mutate(cutoff=cutoff)
 }
 
-cutoffs = seq(0.01,0.95,0.01)
+cutoffs = seq(0.05,0.95,0.01)
 logit_pred= map_dfr(cutoffs, prediction_metrics) %>% mutate(term=as.factor(term))
-```
 
-
-```{r}
-cutoffs = seq(0.01,0.95,0.01)
-
-table <- valid %>% 
-  mutate(predicted_class=if_else(.fitted>cutoffs, 1, 0))
-
-
-table
-```
-
-
-```{r}
-confusionMatrix(table(table$predicted_class, table$Survived), positive = "1") %>% 
-  tidy() %>% 
-  select(term, estimate) %>% 
-  filter(term %in% c('accuracy', 'sensitivity', 'specificity', 'precision','recall'))
-```
-
-
-```{r}
-confusionMatrix(table(table$predicted_class, table$Survived), positive = "1") %>%
-    tidy() %>%
-    select(term, estimate) %>%
-    filter(term %in% c('accuracy', 'sensitivity', 'specificity', 'precision','recall')) %>%
-    mutate(cutoff=cutoffs)
+ggplot(logit_pred, aes(cutoff,estimate, group=term, color=term)) + geom_line(size=1) +
+  theme_bw() +
+  labs(title= 'Accuracy, Sensitivity, Specificity, Recall y Precision', subtitle= 'Model2 - Sobre conjunto de validación', color="")
 ```
 
 
 ## 5.2. Elegir un punto de corte y explicar su decisión
 
-
+0.4
 
 ## 5.3. Obtener la matriz de confusión con el modelo y punto de corte elegidos. Interpretarla
 
 ```{r}
+sel_cutoff = 0.40
 
+table <- valid.results %>% 
+  mutate(predicted_class=if_else(.fitted>sel_cutoff, 1, 0) %>% as.factor(), 
+         Survived = factor(Survived))
+
+# Creamos la matriz de confusión
+confusionMatrix(table(table$Survived, table$predicted_class), positive = "1")
 ```
 
 # 6. Dataset de testeo
