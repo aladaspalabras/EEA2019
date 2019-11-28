@@ -31,14 +31,12 @@ h3{
 }
 </style>
 
-Se cargan las librerías que se utilizarán a lo largo del trabajo.
+# 1. Objetivos del trabajo
 
-```{r}
-rm(list=ls())
-```
-
+TO-DO
 
 ```{r, message=FALSE, warning=FALSE}
+# Se cargan las librerías a utilizar
 library("tidyverse")
 library("data.table")
 library("ggplot2")
@@ -48,38 +46,40 @@ library("gridExtra")
 library("caret")
 library("broom")
 library("pROC")
+# Se elige una semilla
 set.seed(1912)
 ```
 
-# 1. Preparación de los datos
-
-## 1.1. Leer el archivo titanic_complete_train.csv y mostrar su estructura
-
-Se cargan los datos y se lee su estructura.
+# 2. Preparación de los datos
 
 ```{r}
 dataset <- fread("titanic_complete_train.csv")
 
-dataset
-```
-
-```{r}
 glimpse(dataset)
 ```
 
-## 1.2. Seleccionar las variables PassengerId, Survived, Pclass, Sex, Age, SibSp,Parch, Fare y Embarked
+En primer lugar, se carga el daaset. Este cuenta con 891 registros y 12 variables:
+
+ - PassengerId: Id único por pasajero
+ - Survived: sobreviviente (1) o fallecido (0)
+ - Pclass: clase en la que viajaba (1ra, 2da o 3ra)
+ - Name: nombre del pasajero
+ - Sex: sexo del pasajero
+ - Age: edad del pasajero
+ - SibSp: cantidad de hermanos y/o cónyuge a bordo
+ - Parch: cantidad de padres/hijos a bordo
+ - Ticket: número de ticket
+ - Fare: tarifa pagada por el ticket
+ - Cabin: número de cabina
+ - Embarked: lugar de abordo (C: Cherbourg, S: Southampton, Q: Queenstown)
+ 
+De éstas, nos quedaremos con _PassengerId_, _Sex_, _Age_, _SibSp_, _Parch_, _Fare_, _Pclass_, _Survived_ y _Embarked_, que son las que utilizaremos para el ajuste de los distintos modelos, y convertimos las últimas tres a factores.
+
+El nuevo dataset consta de 891 registros y 9 variables.
 
 ```{r}
 dataset <- dataset %>% 
-  select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked)
-
-dataset
-```
-
-## 1.3. Transformar las variables Survived, Pclass y Embarked a factor
-
-```{r}
-dataset <- dataset %>% 
+  select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked) %>% 
   mutate(Survived = as_factor(Survived),
          Pclass = as_factor(Pclass),
          Embarked = as_factor(Embarked))
@@ -87,21 +87,42 @@ dataset <- dataset %>%
 dataset
 ```
 
-```{r}
-glimpse(dataset)
-```
+Con el objetivo de visualizar la relación entre distintas variables, se realiza un gráfico de ggpairs de los atributos _Survived_, _Pclass_, _Sex_, _Age_ y _Fare_.
 
-## 1.4. Realizar un gráfico de ggpairs para las variables Survived, Pclass, Sex, Age y Fare e interpretarlo
+En primer lugar, se observa que la variable _Sobreviviente_ contiene clases desbalanceadas: la cantidad de fallecidos supera a la de sobrevivientes.
+
+Además, al relacionar esta variable con la _clase en la cual viajaban los pasajeros_, vemos tres agrupaciones. En la primera, posiblemente correspondiente a la primera clase, hay mayor cantidad de sobrevivientes que de fallecidos; en la segunda clase, ambas cantidades parecen ser similares, y en la tercera, la relación se presenta a la inversa: hay más fallecidos que sobrevivientes.
+
+Asimismo, al vincular la supervivencia con el _sexo_ de los pasajeros se evidencian dos comportamientos diferenciados: en las mujeres hay más sobrevivientes que fallecidos, y en los hombres ocurre lo contrario.
+
+Si también relacionamos esta información con la que aporta la variable de la _edad_, vemos que la media de las personas a bordo del Titanic se encontraba entre los 20 y 30 años, y que también aquí se encuentra la media de los fallecidos, en su mayoría, varones de la tercera clase.
+
+Apoyamos estas primeras aproximaciones a los datos con tablas que nos permiten confirmar nuestras hipotesis.
 
 ```{r, message=FALSE, warning=FALSE}
 variables <- c('Survived','Pclass','Sex','Age','Fare')
 
-ggpairs(dataset[variables],
+ggpairs(dataset[, variables, with=FALSE],
         mapping = aes(colour= Survived)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_bw()
 ```
 
-## 1.5. Mostrar la distribución de clase (Sobrevivientes vs No Sobrevivientes)
+
+```{r}
+# cantidad de sobrevivientes según clase
+dataset %>%
+  select(Pclass, Survived) %>% 
+  group_by(Survived) %>%
+  count()
+
+# cantidad de sobrevivientes según sexo
+dataset %>%
+  select(Sex, Survived) %>% 
+  group_by(Survived) %>%
+  count()
+```
+
+También graficamos la distribución de la variable _Sobreviviente_, en la cual se observan 342 sobrevivientes. Esto representa un 38% del total de registros.
 
 ```{r}
 ggplot(dataset, 
@@ -121,10 +142,9 @@ ggplot(dataset,
 round((342 / nrow(dataset)) * 100,0)
 ```
 
+Con el objetivo de poder entrenar un modelo y validarlo previamente a realizar nuestras predicciones, dividimos el dataset en un conjunto de entrenamiento (70% de los datos) y validación (30%). Para ello usamos la función *resample_partition* de **modelr**.
 
-## 1.6. Dividir al dataset en conjunto de entrenamiento (70% de los datos) y validación (30% de los datos). Volver a analizar la distribución de clase para chequear que este balanceado
-
-Realizamos una partición entre dataset de entrenamiento (70%) y testeo (30%) usando la función resample_partition del paquete modelr
+Constatamos también que ambos conjuntos presentan aproximadamente la misma distribución en la variable _Sobreviviente_ que la que mostró el dataset completo, dado que esta será nuestra clase target y queremos asegurarnos de entrenar y validar con conjuntos de datos semejantes. 
 
 ```{r}
 train_valid <- dataset %>% resample_partition(c(train=0.7,valid=0.3))
@@ -138,17 +158,17 @@ trainplot <- ggplot(trainset,
   geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 50)) +
   labs(title = "Conjunto de entrenamiento",
        y = "Frecuencia absoluta") +
-  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+  scale_x_discrete("Sobrevivientes", breaks = c("0","1"),
                    labels=c("No sobrevivientes","Sobrevivientes")) +
   theme(legend.position = "none")
 
 validplot <- ggplot(validationset, 
        aes(x=Survived, fill=Survived)) + 
   geom_bar() +
-  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 24)) +
+  geom_text(stat='count', aes(label=..count..), position = position_fill(vjust = 22)) +
   labs(title = "Conjunto de validación",
        y = "Frecuencia absoluta") +
-  scale_x_discrete("Supervivencia", breaks = c("0","1"),
+  scale_x_discrete("Sobrevivientes", breaks = c("0","1"),
                    labels=c("No sobrevivientes","Sobrevivientes")) +
   theme(legend.position = "none")
 
@@ -156,7 +176,7 @@ grid.arrange(
   trainplot,
   validplot,
   nrow = 1,
-  top = "Supervivencia - Distribución de clases"
+  top = "Sobrevivientes - Distribución de clases"
 )
 ```
 
@@ -168,22 +188,40 @@ round((240 / nrow(trainset)) * 100,0)
 round((102 / nrow(validationset)) * 100,0)
 ```
 
+# 3. Generación de modelos
 
-# 2. Predicciones
+Procedemos a ajustar 4 modelos de regresión logísitca utilizando el conjunto de entrenamiento:
 
-## 2.1. Realizar un modelo de regresión logística para predecir la supervivencia en función de Pclass, Sex y Age. Usar solo el dataset de entrenamiento
+- **modelo 0:** predice la probabilidad de sobrevivir en función de la clase, el sexo y la edad
+- **modelo 1:** predice la probabilidad de sobrevivir en función de la clase y el sexo
+- **modelo 2:** predice la probabilidad de sobrevivir en función de la clase, el sexo, la edad y el lugar de abordaje
+- **modelo 3:** predice la probabilidad de sobrevivir en función del sexo y el lugar de abordaje
 
 ```{r}
-glm.fit <- glm(Survived ~ Pclass + Sex + Age, data = trainset, family = "binomial")
+logit_formulae <- formulas(.response = ~Survived,
+                           model0 = ~ Pclass + Sex + Age,
+                           model1 = ~ Pclass + Sex, 
+                           model2 = ~ Pclass + Sex + Age + Embarked,
+                           model3 = ~ Sex + Embarked
+                         )
 
-summary(glm.fit)
+models <- data_frame(logit_formulae) %>% 
+  mutate(models = names(logit_formulae), 
+         expression = paste(logit_formulae), 
+         mod = map(logit_formulae, ~glm(.,family = 'binomial', data = trainset))) 
+
+models
 ```
 
-## 2.2. Dar una breve interpretación de los coeficientes y su significatividad
+Nos detenemos a analizar los coeficientes del primer modelo ajustado, el modelo 0.
 
-TO-DO
+TO-DO Dar una breve interpretación de los coeficientes y su significatividad
 
-## 2.3. ¿Quién tiene una mayor probabilidad de supervivencia? Rose que es una mujer de 17 años que viaja en primera clase o Jack que es un hombre de 20 años viajando en tercera clase
+```{r}
+summary(models$mod$model0)
+```
+
+¿Quién tiene una mayor probabilidad de supervivencia? Rose que es una mujer de 17 años que viaja en primera clase o Jack que es un hombre de 20 años viajando en tercera clase
 
 ```{r}
 rose <- data.frame(Pclass = as.factor(1), 
@@ -192,7 +230,7 @@ rose <- data.frame(Pclass = as.factor(1),
 
 rose.prob <- predict(object = glm.fit, newdata = rose, type = "response")
 
-round(rose.prob,3)
+print(paste("Probabilidad de que Rose sobreviva:", round(rose.prob,3), sep= " "))
 
 jack <- data.frame(Pclass = as.factor(3),
                    Sex = "male",
@@ -200,10 +238,8 @@ jack <- data.frame(Pclass = as.factor(3),
 
 jack.prob <- predict(object = glm.fit, newdata = jack, type = "response")
 
-round(jack.prob,3)
+print(paste("Probabilidad de que Jack sobreviva:", round(jack.prob,3), sep = " "))
 ```
-
-# 3. Generación de modelos
 
 ## 3.1. Generar 3 modelos de regresión logística sobre el dataset de entrenamiento utilizando diferentes combinaciones de variables. Al menos dos modelos deben ser multivariados
 
@@ -250,7 +286,7 @@ models %>%
 
 Mejor modelo: modelo2
 
-# 4. Evaluación del 
+# 4. Evaluación del modelo
 
 ## 4.1. Realizar el gráfico de curva ROC y obtener el AUC para el modelo elegido. Interpretar el gráfico
 
@@ -385,3 +421,4 @@ test.table = test.table %>%
 confusionMatrix(table(test.table$Survived, test.table$predicted_class), positive = "1")
 ```
 
+# 7. Conclusiones
