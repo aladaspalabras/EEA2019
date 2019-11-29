@@ -102,7 +102,7 @@ Apoyamos estas primeras aproximaciones a los datos con tablas que nos permiten c
 ```{r, message=FALSE, warning=FALSE}
 variables <- c('Survived','Pclass','Sex','Age','Fare')
 
-ggpairs(dataset[, variables, with=FALSE],
+ggpairs(dataset[variables],
         mapping = aes(colour= Survived)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + theme_bw()
 ```
@@ -193,14 +193,14 @@ round((102 / nrow(validationset)) * 100,0)
 Procedemos a ajustar 4 modelos de regresión logísitca utilizando el conjunto de entrenamiento:
 
 - **modelo 0:** predice la probabilidad de sobrevivir en función de la clase, el sexo y la edad
-- **modelo 1:** predice la probabilidad de sobrevivir en función de la clase y el sexo
+- **modelo 1:** predice la probabilidad de sobrevivir en función del monto pagado por el pasaje y el sexo
 - **modelo 2:** predice la probabilidad de sobrevivir en función de la clase, el sexo, la edad y el lugar de abordaje
 - **modelo 3:** predice la probabilidad de sobrevivir en función del sexo y el lugar de abordaje
 
 ```{r}
 logit_formulae <- formulas(.response = ~Survived,
                            model0 = ~ Pclass + Sex + Age,
-                           model1 = ~ Pclass + Sex, 
+                           model1 = ~ Fare + Sex, 
                            model2 = ~ Pclass + Sex + Age + Embarked,
                            model3 = ~ Sex + Embarked
                          )
@@ -215,20 +215,24 @@ models
 
 Nos detenemos a analizar los coeficientes del primer modelo ajustado, el modelo 0.
 
-TO-DO Dar una breve interpretación de los coeficientes y su significatividad
+En una regresión logística, los coeficientes positivos indican que, al aumentar su variable, la probabilidad predicha aumenta también. Por el contrario, un coeficiente negativo indica que la probabilidad disminuye cuando la variable incrementa su valor.
+
+En el caso particular del **modelo 0**, la probabilidad de sobrevivir disminuye cuando aumentan la variable *Pclass* toma los valores 2 o 3 y, en este último caso, la disminución es más pronunciada.
+Del mismo modo, si el pasajero resulta ser un varón, su probabilidad de sobrevivir se reduce.
+Y, conforme la persona sea de edad más avanzada, la probabilidad de sobrevivir también decaerá.
 
 ```{r}
 summary(models$mod$model0)
 ```
 
-¿Quién tiene una mayor probabilidad de supervivencia? Rose que es una mujer de 17 años que viaja en primera clase o Jack que es un hombre de 20 años viajando en tercera clase
+Realizamos dos predicciones que nos permiten ver mejor la relación entre coeficientes y probabilidad predicha. Por un lado, predecimos la probabilidad de sobrevivir de Rose, una mujer de 17 años que viaja en primera clase. Por otro, evaluamos el caso de Jack, varón de 20 años que viaja en tercera clase.
 
 ```{r}
 rose <- data.frame(Pclass = as.factor(1), 
                    Sex = "female",
                    Age = 17)
 
-rose.prob <- predict(object = glm.fit, newdata = rose, type = "response")
+rose.prob <- predict(object = models$mod$model0, newdata = rose, type = "response")
 
 print(paste("Probabilidad de que Rose sobreviva:", round(rose.prob,3), sep= " "))
 
@@ -236,29 +240,14 @@ jack <- data.frame(Pclass = as.factor(3),
                    Sex = "male",
                    Age = 20)
 
-jack.prob <- predict(object = glm.fit, newdata = jack, type = "response")
+jack.prob <- predict(object = models$mod$model0, newdata = jack, type = "response")
 
 print(paste("Probabilidad de que Jack sobreviva:", round(jack.prob,3), sep = " "))
 ```
 
-## 3.1. Generar 3 modelos de regresión logística sobre el dataset de entrenamiento utilizando diferentes combinaciones de variables. Al menos dos modelos deben ser multivariados
+Como era de esperar, la probabilidad de sobrevivir predicha para Jack es menor. En el caso de Rose, la probabilidad no se ve disminuida por los coeficientes de las vairbales *Pclass* ni  *Sex*, sino solo por el de *Age*. Jack, en cambio, no solo se ve afectado por este último (y en mayor medida dado que su edad es mayor), sino también por los coeficientes asociados a *Pclass3* (*Pclass* al adoptar el valor 3) y *Sexmale* (*Sex* cuando toma el valor *male*), que tienen una influencia negativa en la probabilidad predicha.
 
-```{r}
-logit_formulae <- formulas(.response = ~Survived,
-                           model0 = ~ Pclass + Sex + Age,
-                           model1 = ~ Pclass + Sex, 
-                           model2 = ~ Pclass + Embarked + Sex + Age,
-                           model3 = ~ Embarked + Sex
-                         )
-
-models <- data_frame(logit_formulae) %>% 
-  mutate(models = names(logit_formulae), 
-         expression = paste(logit_formulae), 
-         mod = map(logit_formulae, ~glm(.,family = 'binomial', data = trainset))) 
-
-models
-```
-
+Analicemos brevemente el resto de los modelos. 
 
 ```{r}
 models %>% 
@@ -269,9 +258,13 @@ models %>%
          p.value=round(p.value,4))
 ```
 
-TO-DO: analizar modelos
+- **Modelo 1:** tanto la variable *Fare* como *Sex* resultan significativas. Mientras que la variable *Fare* (la tarifa pagada por el pasaje), al aumentar, incrementa la proabilidad de sobrevivir, la variable *Sex* produce ele fecto contrario al tomar el valor *male*.
 
-## 3.2. Ordenar por la deviance los 3 modelos creados en el punto 3)a) y el creado en el punto 2)a) y seleccionar el mejor modelo en términos de la deviance explicada
+- **Modelo 2:** solo las variables *Sex* y *Pclass* resultan significativas. Los coeficientes asociados a *Embarked* presentan un valor mayor a 0,05, por lo que no aportan información al modelo. En el caso de *Sex* y *Pclass* se observa la misma influencia en la probabilidad que la encontrada en el modelo 0.
+
+- **Modelo 3:** aquí la variable *Sex* aporta infromación pero la variable *Embarked* no. En el caso de *Sex*, tiene la misma influencia sobre la probabilidad predicha que la que tenía en el modelo 0. *Embarked*, por su parte, influye positivamente cuando la clase de embarcación es la C e influye negativamente cuando es la Q.
+
+A continuación, se ordenan los modelos por deviance explicada. Podemos ver que el modelo que minimiza la deviance es el modelo 2, lo que hace que su porcentaje de deviance explicada sea mayor al resto: aproximadamente 31%.
 
 ```{r}
 models <- models %>% 
@@ -279,16 +272,16 @@ models <- models %>%
 
 models %>% 
   unnest(glance, .drop = TRUE) %>%
-  mutate(perc_explained_dev = 1-(deviance/null.deviance)) %>% 
+  mutate(perc_explained_dev = 1-deviance/null.deviance) %>% 
   select(-c(models, df.null, AIC, BIC)) %>% 
   arrange(deviance)
 ```
 
-Mejor modelo: modelo2
-
 # 4. Evaluación del modelo
 
-## 4.1. Realizar el gráfico de curva ROC y obtener el AUC para el modelo elegido. Interpretar el gráfico
+En este apartado procedemos a evaluar el mejor modelo ajustado en el apartado anterior, esto es, el modelo 2. En primer lugar, realizamos una curva ROC.
+
+## Interpretación
 
 ```{r}
 models <- models %>% 
