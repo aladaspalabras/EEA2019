@@ -167,18 +167,18 @@ En este caso tenemos la tendencia de los visitantes y la estacionalidad semanal.
 
 La funcion `cross_validation` permite realizar pronosticos realizando un esquema de cross-validation temporal y, a partir de ellos, obtener ciertas metricas de performance.
 
-  * **horizon**: horizonte del pronostico. Cuánto tiempo deseo predecir
+  * **horizon**: horizonte del pronóstico. Cuánto tiempo deseo predecir en el futuro.
   
-  * **period**: periodo entre fechas de analisis. Cuánto voy corriendo mi ventana
+  * **period**: período entre fechas de análisis. Cuánto voy corriendo mi ventana.
   
-   * **initial**: periodo inicial de entrenamiento
+   * **initial**: período inicial de entrenamiento (no testeo con esto, lo uso para entrenar no más).
 
 ```{r}
 cv_base = cross_validation(prophet_base, initial = 45, period = 7, horizon = 15, units = 'days')
 cv_base
 ```
 
-La funcion `performance_metrics` computa varias metricas de performance a partir de un dataframe de cross validation de prophet
+La función `performance_metrics` computa varias metricas de performance a partir de un dataframe de cross validation de prophet
 
 ```{r}
 performance_metrics(cv_base, rolling_window = 0.5)
