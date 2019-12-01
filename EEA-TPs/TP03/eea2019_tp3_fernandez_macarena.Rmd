@@ -52,12 +52,6 @@ set.seed(1912)
 
 # 2. Preparación de los datos
 
-```{r}
-dataset <- fread("titanic_complete_train.csv")
-
-glimpse(dataset)
-```
-
 En primer lugar, se carga el daaset. Este cuenta con 891 registros y 12 variables:
 
  - PassengerId: Id único por pasajero
@@ -73,6 +67,12 @@ En primer lugar, se carga el daaset. Este cuenta con 891 registros y 12 variable
  - Cabin: número de cabina
  - Embarked: lugar de abordo (C: Cherbourg, S: Southampton, Q: Queenstown)
  
+```{r}
+dataset <- fread("titanic_complete_train.csv")
+
+glimpse(dataset)
+```
+
 De éstas, nos quedaremos con _PassengerId_, _Sex_, _Age_, _SibSp_, _Parch_, _Fare_, _Pclass_, _Survived_ y _Embarked_, que son las que utilizaremos para el ajuste de los distintos modelos, y convertimos las últimas tres a factores.
 
 El nuevo dataset consta de 891 registros y 9 variables.
@@ -193,16 +193,16 @@ round((102 / nrow(validationset)) * 100,0)
 Procedemos a ajustar 4 modelos de regresión logísitca utilizando el conjunto de entrenamiento:
 
 - **modelo 0:** predice la probabilidad de sobrevivir en función de la clase, el sexo y la edad
-- **modelo 1:** predice la probabilidad de sobrevivir en función del monto pagado por el pasaje y el sexo
-- **modelo 2:** predice la probabilidad de sobrevivir en función de la clase, el sexo, la edad y el lugar de abordaje
-- **modelo 3:** predice la probabilidad de sobrevivir en función del sexo y el lugar de abordaje
+- **modelo 1:** predice la probabilidad de sobrevivir en función de la tarifa pagada por el pasaje y el sex
+- **modelo 2:** predice la probabilidad de sobrevivir en función de la clase, el sexo, la edad y la tarifa pagada por el pasaje
+- **modelo 3:** predice la probabilidad de sobrevivir en función del sexo y la cantidad de pares y/o hijos abordo del barco
 
 ```{r}
 logit_formulae <- formulas(.response = ~Survived,
                            model0 = ~ Pclass + Sex + Age,
                            model1 = ~ Fare + Sex, 
-                           model2 = ~ Pclass + Sex + Age + Embarked,
-                           model3 = ~ Sex + Embarked
+                           model2 = ~ Pclass + Sex + Age + Fare,
+                           model3 = ~ Sex + Parch
                          )
 
 models <- data_frame(logit_formulae) %>% 
@@ -260,11 +260,11 @@ models %>%
 
 - **Modelo 1:** tanto la variable *Fare* como *Sex* resultan significativas. Mientras que la variable *Fare* (la tarifa pagada por el pasaje), al aumentar, incrementa la proabilidad de sobrevivir, la variable *Sex* produce ele fecto contrario al tomar el valor *male*.
 
-- **Modelo 2:** solo las variables *Sex* y *Pclass* resultan significativas. Los coeficientes asociados a *Embarked* presentan un valor mayor a 0,05, por lo que no aportan información al modelo. En el caso de *Sex* y *Pclass* se observa la misma influencia en la probabilidad que la encontrada en el modelo 0.
+- **Modelo 2:** aquí todas las variables, a excepción de *Fare*, resultan significativas. El coeficiente asociados a *Fare* presenta un valor mayor a 0,05, lo que indica que esta variable no aporta información al modelo. En el caso de *Pclass*, *Sex* y *Age* se observa una influencia en la probabilidad similar a la encontrada en el modelo 0.
 
-- **Modelo 3:** aquí la variable *Sex* aporta infromación pero la variable *Embarked* no. En el caso de *Sex*, tiene la misma influencia sobre la probabilidad predicha que la que tenía en el modelo 0. *Embarked*, por su parte, influye positivamente cuando la clase de embarcación es la C e influye negativamente cuando es la Q.
+- **Modelo 3:** aquí la variable *Sex* aporta infromación pero la variable *Parch* no. En el caso de *Sex*, tiene la misma influencia sobre la probabilidad predicha que la que tenía en el modelo 0: al adoptar el valor *male*, reduce la probabilidad. *Parch*, por su parte, influye negativamente al aumentar su valor.
 
-A continuación, se ordenan los modelos por deviance explicada. Podemos ver que el modelo que minimiza la deviance es el modelo 2, lo que hace que su porcentaje de deviance explicada sea mayor al resto: aproximadamente 31%.
+A continuación, se ordenan los modelos por deviance explicada. Podemos ver que el modelo que minimiza la deviance es el modelo 2, lo que hace que su porcentaje de deviance explicada sea mayor al resto: aproximadamente 30%.
 
 ```{r}
 models <- models %>% 
@@ -279,11 +279,33 @@ models %>%
 
 # 4. Evaluación del modelo
 
-En este apartado procedemos a evaluar el mejor modelo ajustado en el apartado anterior, esto es, el modelo 2. En primer lugar, realizamos una curva ROC.
+En este apartado procedemos a evaluar el mejor modelo ajustado en el apartado anterior, esto es, el modelo 2. 
 
-## Interpretación
+En primer lugar, realizamos una curva ROC. En ella graficamos el Ratio de Verdaderos Negativos o *specificity* en el eje de abscisas y el Ratio de Verdaderos Positivos o *sensitivity* en el eje de ordenadas, cuyas fórmulas son:
 
-```{r}
+$sensitivity = \frac{TP}{TP+FN}$
+
+$specificity = \frac{TN}{TN+FP}$
+
+Donde: 
+
+  - TP = true positive o verdaderos positivos 
+  (casos que el modelo predijo como positivos y realmente lo eran)
+  - FP = false positive o falsos positivos
+  (casos que el modelo predijo como positivos y en realidad eran negativos)
+  - TN = true negative o verdadernos negativos
+  (casos que el modelo predijo como negativos y realmente lo eran)
+  - FN = false negative o falsos negativos
+  (casos que el modelo predijo como negativos y en realidad eran positivos)
+  
+
+La *sensitivity*, a la cual también se la suele denominar *recall*, indica la cuántos casos realmente positivos se lograron predecir correctamente. Para ello, se considera el total de casos que el modelo predijo como positivos y que realmente lo son (TP) sobre el total de positivos relaes (TP+FN), hayan sido predecidos como tales por el modelo (TP) o hayan sido catalogados errónemanete como negativos (FN). En este trabajo, los verdaderos son los sobrevivientes que intentamos predecir. 
+
+La *specificity*, por otro lado, indica lo mismo con respecto a los negativos: cuántos casos que en realidad eran negativos fueron predichos de esta forma por nuestro modelo. Aquí la cuenta que se realiza toma los negativos reales que fueron predichos de tal forma por nuestro modelo (TN) y los divide por el total de negativos reales (TN+FP). En este trabajo, los casos negtivos corresponden a los "no sobrevivientes".
+
+Además, podemos calcular el área bajo la curva graficada. El modelo 2 cuenta con un área del 83%, por lo que sus predicciones superan el las del azar, cuyo área es del 50% y se encuentra representado por la línea punteada.
+
+```{r, message=FALSE, warning=FALSE}
 models <- models %>% 
   mutate(pred= map(mod,augment, type.predict = "response"))
 
@@ -297,7 +319,7 @@ ggroc(roc_data, size=1, color="turquoise3") +
   geom_abline(slope = 1, intercept = 1, linetype='dashed') +
   theme_bw() + 
   labs(title='Curva ROC', 
-       subtitle = 'Modelo2: Survived ~ Pclass + Embarked + Sex + Age')
+       subtitle = 'Modelo2: Survived ~ Pclass + Fare + Sex + Age')
 
 ```
 
@@ -305,7 +327,9 @@ ggroc(roc_data, size=1, color="turquoise3") +
 print(paste('AUC: Modelo2: Survived~Pclass+Embarked+Sex+Age:', roc_data$auc))
 ```
 
-## 4.2. Realizar un violin plot e interpretar
+Graficamos también un violin plot que nos permita ver la distribución de las clases "sobreviviente" y "no sobreviviente" en relación a la probabilidad predicha por el modelo.
+
+En él se puede observar que, a medida que la probabilidad asignada por el modelo aumenta, la clase "no sobreviviente" disminuye su densidad y la clase "sobreviviente" la aumenta. Esto nos ayuda a pensar un posible punto de corte a partir del cual podemos establecer que una persona sobrevive, intentando además no predecir erróneamente los "no sobrevivientes". Dado que el quiebre entre disminución de la densidad de "no sobrevivientes" y aumento de la densidad de "sobrevivientes" parece estar entre 0.30 y 0.45, podría pensarse un punto de corte que esté en ese intervalo.
 
 ```{r}
 ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survived))) + 
@@ -315,17 +339,17 @@ ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survive
   scale_x_discrete("Supervivencia", breaks = c("0","1"),
                    labels=c("No sobrevivientes","Sobrevivientes")) +
   labs(title='Violin plot', 
-       subtitle = 'Modelo2: Survived ~ Pclass + Embarked + Sex + Age', 
+       subtitle = 'Modelo2: Survived ~ Pclass + Fare + Sex + Age', 
        y='Probabilidad predicha')
 ```
 
 
 # 5. Elección del punto de corte
 
-## 5.1. Sobre el dataset de validación realizar un gráfico de Accuracy, Specificity, Recall y Precision en función del punto de corte
-
+En este apartado procederemos a probar nuestro modelo con los datos que hemos reservado para la validación y, a partir de esos resultados, elegiremos un punto de corte que consideremos apropiado para predecir si alguien sobrevide.
 
 ```{r}
+# se testean el modelo con los datos de VALIDACIÓN reservados
 valid <- models %>% 
   filter(grepl('2',models)) %>% 
   mutate(val= map(mod,augment, newdata=validationset, type.predict = "response"))
@@ -336,6 +360,17 @@ valid.results <-  valid %>%
 valid.results
 ```
 
+Para ayudarnos, realizamos un gráfico donde se visualice *accuracy*, *precision*, *recall* y *specificity*.
+
+Ya hemos hablado de los últimos dos, detengámonos un momento en los primeros:
+
+$accuracy = \frac{TP+TN}{TP+FP+TN+FN}$
+
+$precision = \frac{TP}{TP+FP}$
+
+El *accuracy* mide la performance general del modelo calculando cuándos casos predijo correctamente, sean estos positivos (aquí, "sobrevivientes") o negativos ("no sobrevivientes"), y nos indica qué proporción representan los mismos respecto del total de casos predichos (TP+FP+TN+FN).
+
+La *precision*, a su vez, 
 
 ```{r}
 prediction_metrics <- function(cutoff, predictions=valid.results){
