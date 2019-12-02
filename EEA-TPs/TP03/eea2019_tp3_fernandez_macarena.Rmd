@@ -33,10 +33,15 @@ h3{
 
 # 1. Objetivos del trabajo
 
-TO-DO
+En este trabajo ajustaremos una serie de modelos de regresión logística utilizando un datset sobre pasajeros del Titanic, barco que se hundió en 1912.
+
+El objetivo, en todos los casos, consistirá en predecir la cantidad sobrevivientes al naufragio. 
+Los modelos que ajustemos nos proporcionarán la probabilidad de supervivencia. Elegiremos uno y, luego de establecer un punto de corte, podremos predecir la clase a la que pertenece cada pasajero.
+
+Asimismo, se analizarán las características de los datasets utilizados, como las de los modelos generados.
 
 ```{r, message=FALSE, warning=FALSE}
-# Se cargan las librerías a utilizar
+# se cargan las librerías a utilizar
 library("tidyverse")
 library("data.table")
 library("ggplot2")
@@ -46,17 +51,17 @@ library("gridExtra")
 library("caret")
 library("broom")
 library("pROC")
-# Se elige una semilla
+# se elige una semilla
 set.seed(1912)
 ```
 
 # 2. Preparación de los datos
 
-En primer lugar, se carga el daaset. Este cuenta con 891 registros y 12 variables:
+En primer lugar, se carga el dataset. Este cuenta con 891 registros y 12 variables:
 
  - PassengerId: Id único por pasajero
  - Survived: sobreviviente (1) o fallecido (0)
- - Pclass: clase en la que viajaba (1ra, 2da o 3ra)
+ - Pclass: clase del viaje (1ra, 2da o 3ra)
  - Name: nombre del pasajero
  - Sex: sexo del pasajero
  - Age: edad del pasajero
@@ -68,16 +73,18 @@ En primer lugar, se carga el daaset. Este cuenta con 891 registros y 12 variable
  - Embarked: lugar de abordo (C: Cherbourg, S: Southampton, Q: Queenstown)
  
 ```{r}
+# se carga el dataset
 dataset <- fread("titanic_complete_train.csv")
 
 glimpse(dataset)
 ```
 
-De éstas, nos quedaremos con _PassengerId_, _Sex_, _Age_, _SibSp_, _Parch_, _Fare_, _Pclass_, _Survived_ y _Embarked_, que son las que utilizaremos para el ajuste de los distintos modelos, y convertimos las últimas tres a factores.
+De éstas, nos seleccionamos con _PassengerId_, _Sex_, _Age_, _SibSp_, _Parch_, _Fare_, _Pclass_, _Survived_ y _Embarked_, que son las que utilizaremos para el ajuste de los distintos modelos, y convertimos las últimas tres a factores.
 
 El nuevo dataset consta de 891 registros y 9 variables.
 
 ```{r}
+# se seleccinan las variables deseadas y se convierten algunas a factores
 dataset <- dataset %>% 
   select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked) %>% 
   mutate(Survived = as_factor(Survived),
@@ -91,11 +98,11 @@ Con el objetivo de visualizar la relación entre distintas variables, se realiza
 
 En primer lugar, se observa que la variable _Sobreviviente_ contiene clases desbalanceadas: la cantidad de fallecidos supera a la de sobrevivientes.
 
-Además, al relacionar esta variable con la _clase en la cual viajaban los pasajeros_, vemos tres agrupaciones. En la primera, posiblemente correspondiente a la primera clase, hay mayor cantidad de sobrevivientes que de fallecidos; en la segunda clase, ambas cantidades parecen ser similares, y en la tercera, la relación se presenta a la inversa: hay más fallecidos que sobrevivientes.
+Además, al relacionar esta variable con la _clase en la cual viajaban los pasajeros_, vemos tres agrupaciones. En la primera, posiblemente correspondiente a la primera clase, hay mayor cantidad de sobrevivientes que de fallecidos; en la segunda clase, ambas cantidades parecen ser similares, y en la tercera la relación se presenta a la inversa: hay más fallecidos que sobrevivientes.
 
 Asimismo, al vincular la supervivencia con el _sexo_ de los pasajeros se evidencian dos comportamientos diferenciados: en las mujeres hay más sobrevivientes que fallecidos, y en los hombres ocurre lo contrario.
 
-Si también relacionamos esta información con la que aporta la variable de la _edad_, vemos que la media de las personas a bordo del Titanic se encontraba entre los 20 y 30 años, y que también aquí se encuentra la media de los fallecidos, en su mayoría, varones de la tercera clase.
+Si también relacionamos esta información con la que aporta la variable de la _edad_, vemos que la media de las personas a bordo del Titanic se encontraba entre los 20 y 30 años y que también aquí se encuentra la media de los fallecidos, en su mayoría, varones de la tercera clase.
 
 Apoyamos estas primeras aproximaciones a los datos con tablas que nos permiten confirmar nuestras hipotesis.
 
@@ -112,17 +119,17 @@ ggpairs(dataset[variables],
 # cantidad de sobrevivientes según clase
 dataset %>%
   select(Pclass, Survived) %>% 
-  group_by(Survived) %>%
-  count()
+  group_by(Pclass) %>%
+  count(Survived)
 
 # cantidad de sobrevivientes según sexo
 dataset %>%
   select(Sex, Survived) %>% 
-  group_by(Survived) %>%
-  count()
+  group_by(Sex) %>% 
+  count(Survived)
 ```
 
-También graficamos la distribución de la variable _Sobreviviente_, en la cual se observan 342 sobrevivientes. Esto representa un 38% del total de registros.
+También graficamos la distribución de la variable _Survived_, en la cual se observan 342 sobrevivientes. Esto representa un 38% del total de registros.
 
 ```{r}
 ggplot(dataset, 
@@ -134,24 +141,26 @@ ggplot(dataset,
   scale_x_discrete("Supervivencia", breaks = c("0","1"),
                    labels=c("No sobrevivientes","Sobrevivientes")) +
   theme(legend.position = "none")
-
 ```
 
 ```{r}
 # porcentaje de sobrevivientes
-round((342 / nrow(dataset)) * 100,0)
+dist.dataset <- round((342 / nrow(dataset)) * 100,0)
+print(paste("Porcentaje de sobrevivientes en el dataset:", dist.dataset,"%"))
 ```
 
-Con el objetivo de poder entrenar un modelo y validarlo previamente a realizar nuestras predicciones, dividimos el dataset en un conjunto de entrenamiento (70% de los datos) y validación (30%). Para ello usamos la función *resample_partition* de **modelr**.
+Con el objetivo de poder entrenar un modelo y validarlo previamente a realizar nuestras predicciones, dividimos el dataset en un conjunto de entrenamiento (70% de los datos) y otro de validación (30%). Para ello usamos la función *resample_partition* de **modelr**.
 
 Constatamos también que ambos conjuntos presentan aproximadamente la misma distribución en la variable _Sobreviviente_ que la que mostró el dataset completo, dado que esta será nuestra clase target y queremos asegurarnos de entrenar y validar con conjuntos de datos semejantes. 
 
 ```{r}
+# se particiona el dataset en entrenamiento y validación
 train_valid <- dataset %>% resample_partition(c(train=0.7,valid=0.3))
 
 trainset <- train_valid$train %>% as_tibble()
 validationset <- train_valid$valid %>% as_tibble()
 
+# se grafican las distribuciones de clases de ambos conjuntos
 trainplot <- ggplot(trainset, 
        aes(x=Survived, fill=Survived)) + 
   geom_bar() +
@@ -182,10 +191,12 @@ grid.arrange(
 
 ```{r}
 # porcentaje de sobrevivientes en set de entrenamiento
-round((240 / nrow(trainset)) * 100,0)
+dist.train <- round((240 / nrow(trainset)) * 100,0)
+print(paste("Porcentaje de sobrevivientes en el conjunto de entrenamiento:", dist.train,"%"))
 
 # porcentaje de sobrevivientes en set de validación
-round((102 / nrow(validationset)) * 100,0)
+dist.val <- round((102 / nrow(validationset)) * 100,0)
+print(paste("Proporción de sobrevivientes en el conjunto de validación:", dist.val,"%"))
 ```
 
 # 3. Generación de modelos
@@ -193,11 +204,12 @@ round((102 / nrow(validationset)) * 100,0)
 Procedemos a ajustar 4 modelos de regresión logísitca utilizando el conjunto de entrenamiento:
 
 - **modelo 0:** predice la probabilidad de sobrevivir en función de la clase, el sexo y la edad
-- **modelo 1:** predice la probabilidad de sobrevivir en función de la tarifa pagada por el pasaje y el sex
+- **modelo 1:** predice la probabilidad de sobrevivir en función de la tarifa pagada por el pasaje y el sexo
 - **modelo 2:** predice la probabilidad de sobrevivir en función de la clase, el sexo, la edad y la tarifa pagada por el pasaje
-- **modelo 3:** predice la probabilidad de sobrevivir en función del sexo y la cantidad de pares y/o hijos abordo del barco
+- **modelo 3:** predice la probabilidad de sobrevivir en función del sexo y la cantidad de padres y/o hijos abordo del barco
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
+# se definen las fórmulas para los 4 modelos
 logit_formulae <- formulas(.response = ~Survived,
                            model0 = ~ Pclass + Sex + Age,
                            model1 = ~ Fare + Sex, 
@@ -205,6 +217,7 @@ logit_formulae <- formulas(.response = ~Survived,
                            model3 = ~ Sex + Parch
                          )
 
+# se genera un data frame con la información y los modelos ajustados
 models <- data_frame(logit_formulae) %>% 
   mutate(models = names(logit_formulae), 
          expression = paste(logit_formulae), 
@@ -245,7 +258,7 @@ jack.prob <- predict(object = models$mod$model0, newdata = jack, type = "respons
 print(paste("Probabilidad de que Jack sobreviva:", round(jack.prob,3), sep = " "))
 ```
 
-Como era de esperar, la probabilidad de sobrevivir predicha para Jack es menor. En el caso de Rose, la probabilidad no se ve disminuida por los coeficientes de las vairbales *Pclass* ni  *Sex*, sino solo por el de *Age*. Jack, en cambio, no solo se ve afectado por este último (y en mayor medida dado que su edad es mayor), sino también por los coeficientes asociados a *Pclass3* (*Pclass* al adoptar el valor 3) y *Sexmale* (*Sex* cuando toma el valor *male*), que tienen una influencia negativa en la probabilidad predicha.
+Como era de esperar, la probabilidad de sobrevivir predicha para Jack es menor. En el caso de Rose, la probabilidad no se ve disminuida por los coeficientes de las vairbales *Pclass* ni  *Sex*, sino solo por el de *Age*. Jack, en cambio, no solo se ve afectado por este último (y en mayor medida dado que su edad es mayor), sino también por los coeficientes asociados a *Pclass3* (*Pclass* al adoptar el valor 3) y *Sexmale* (*Sex* cuando toma el valor *male*), que tienen una influencia negativa en la probabilidad predicha para él.
 
 Analicemos brevemente el resto de los modelos. 
 
@@ -299,11 +312,11 @@ Donde:
   (casos que el modelo predijo como negativos y en realidad eran positivos)
   
 
-La *sensitivity*, a la cual también se la suele denominar *recall*, indica la cuántos casos realmente positivos se lograron predecir correctamente. Para ello, se considera el total de casos que el modelo predijo como positivos y que realmente lo son (TP) sobre el total de positivos relaes (TP+FN), hayan sido predecidos como tales por el modelo (TP) o hayan sido catalogados errónemanete como negativos (FN). En este trabajo, los verdaderos son los sobrevivientes que intentamos predecir. 
+La *sensitivity*, a la cual también se la suele denominar *recall*, indica la cuántos casos realmente positivos se lograron predecir correctamente, es decir, cuánta cobertura tiene el modelo. Para ello, se considera el total de casos que el modelo predijo como positivos y que realmente lo son (TP) sobre el total de positivos relaes (TP+FN), hayan sido predichos como tales por el modelo (TP) o hayan sido catalogados errónemanete como negativos (FN). En este trabajo, la clase positiva son los sobrevivientes. 
 
-La *specificity*, por otro lado, indica lo mismo con respecto a los negativos: cuántos casos que en realidad eran negativos fueron predichos de esta forma por nuestro modelo. Aquí la cuenta que se realiza toma los negativos reales que fueron predichos de tal forma por nuestro modelo (TN) y los divide por el total de negativos reales (TN+FP). En este trabajo, los casos negtivos corresponden a los "no sobrevivientes".
+La *specificity*, por otro lado, indica lo mismo pero con respecto a los negativos: cuántos casos que en realidad eran negativos fueron predichos de esta forma por nuestro modelo. Aquí la cuenta que se realiza toma los negativos reales que fueron predichos de tal forma (TN) y los divide por el total real de negativos (TN+FP). En este trabajo, los casos negtivos corresponden a los "no sobrevivientes".
 
-Además, podemos calcular el área bajo la curva graficada. El modelo 2 cuenta con un área del 83%, por lo que sus predicciones superan el las del azar, cuyo área es del 50% y se encuentra representado por la línea punteada.
+Además, podemos calcular el área bajo la curva graficada. El modelo 2 cuenta con un área del 83%, por lo que sus predicciones superan las del azar, representado por la línea punteada y cuya área es del 50%.
 
 ```{r, message=FALSE, warning=FALSE}
 models <- models %>% 
@@ -329,7 +342,9 @@ print(paste('AUC: Modelo2: Survived~Pclass+Embarked+Sex+Age:', roc_data$auc))
 
 Graficamos también un violin plot que nos permita ver la distribución de las clases "sobreviviente" y "no sobreviviente" en relación a la probabilidad predicha por el modelo.
 
-En él se puede observar que, a medida que la probabilidad asignada por el modelo aumenta, la clase "no sobreviviente" disminuye su densidad y la clase "sobreviviente" la aumenta. Esto nos ayuda a pensar un posible punto de corte a partir del cual podemos establecer que una persona sobrevive, intentando además no predecir erróneamente los "no sobrevivientes". Dado que el quiebre entre disminución de la densidad de "no sobrevivientes" y aumento de la densidad de "sobrevivientes" parece estar entre 0.30 y 0.45, podría pensarse un punto de corte que esté en ese intervalo.
+En él se puede observar que, a medida que la probabilidad asignada se incrementa, la clase "no sobreviviente" disminuye su densidad y la clase "sobreviviente" la aumenta. Esto nos ayuda a pensar un posible punto de corte a partir del cual podemos establecer que una persona sobrevive, intentando minimizar además el error de predicción (i.e. catalogar a un "no sobrevivientes" como "sobreviviente" o viceversa). 
+
+Dado que el quiebre entre disminución de la densidad de "no sobrevivientes" y aumento de la densidad de "sobrevivientes" parece estar entre 0.30 y 0.45, podría pensarse un punto de corte que esté en ese intervalo.
 
 ```{r}
 ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survived))) + 
@@ -342,7 +357,6 @@ ggplot(prediction, aes(x=Survived, y=.fitted, group=Survived,fill=factor(Survive
        subtitle = 'Modelo2: Survived ~ Pclass + Fare + Sex + Age', 
        y='Probabilidad predicha')
 ```
-
 
 # 5. Elección del punto de corte
 
@@ -368,11 +382,12 @@ $accuracy = \frac{TP+TN}{TP+FP+TN+FN}$
 
 $precision = \frac{TP}{TP+FP}$
 
-El *accuracy* mide la performance general del modelo calculando cuándos casos predijo correctamente, sean estos positivos (aquí, "sobrevivientes") o negativos ("no sobrevivientes"), y nos indica qué proporción representan los mismos respecto del total de casos predichos (TP+FP+TN+FN).
+El *accuracy* permite medir la performance general del modelo. Para ello, se debe calcular cuántos casos fueron predichos correctamente, sean estos positivos (aquí, "sobrevivientes") o negativos ("no sobrevivientes"), y relacionarlos con el total de casos (TP+FP+TN+FN), de modo que la cuenta resultante refleja proporción de los registros fue predicha de manera correcta respecto del total.
 
-La *precision*, a su vez, 
+La *precision*, a su vez, indica cuán exacto es el modelo, dado que podría ocurrir que éste capturase correctamente los casos positivos pero a costa de predecir también como positivos los registros negativos. Para medir esto es que se usa la *precision*, que calcula la cantidad de verdaderos positivos que predijo el modelo sobre la cantidad total de positivos predichos, sean estos realmente positivos o no.
 
 ```{r}
+# función que calcula las métricas de las predicciones de acuerdo a los puntos de corte establecidos
 prediction_metrics <- function(cutoff, predictions=valid.results){
   table <- predictions %>% 
     mutate(predicted_class=if_else(.fitted>cutoff, 1, 0) %>% as.factor(),
@@ -384,39 +399,67 @@ prediction_metrics <- function(cutoff, predictions=valid.results){
     mutate(cutoff=cutoff)
 }
 
+# se definen puntos de corte
 cutoffs = seq(0.05,0.95,0.01)
 logit_pred= map_dfr(cutoffs, prediction_metrics) %>% mutate(term=as.factor(term))
 
+# se seleccionan los puntos de corte con mayor accuracy
+cutoff.max_ac <- logit_pred %>% 
+  filter(term=='accuracy') %>% 
+  filter(estimate == max(estimate)) %>% 
+  select(cutoff) 
+
 ggplot(logit_pred, aes(cutoff,estimate, group=term, color=term)) + geom_line(size=1) +
   theme_bw() +
-  labs(title= 'Accuracy, Sensitivity, Specificity, Recall y Precision', subtitle= 'Model2 - Sobre conjunto de validación', color="")
+  labs(title= 'Accuracy, Sensitivity, Specificity, Recall y Precision', subtitle= 'Model2 - Sobre conjunto de validación', color="") +
+  geom_vline(xintercept = min(cutoff.max_ac), linetype="dotted",  color = "black", size=1) +
+  geom_vline(xintercept = max(cutoff.max_ac), linetype="dotted",  color = "black", size=1)
 ```
 
+En el gráfico se observa que el mejor accuracy se obtiene entre los puntos de corte 0.45 y 0.46. A partir de allí, la línea que marca el accuracy comienza a decaer. 
 
-## 5.2. Elegir un punto de corte y explicar su decisión
+También es cerca de ese punto donde se intersectan las líneas de precision y recall (o sensitivity). Esta intersección da cuenta de la compensación o tensión en la que se encuentran la cobertura y la exactitud de un modelo: la capacidad de predecir correctamente mayor cantidad de casos positivos (i.e. de tener un mayor recall) está acompañada de una menor precisión, por la cual el modelo predice como positivos registros que en realidad no lo son. Y a medida que esta precisión aumenta, su precisión disminuye, es decir, predice correctamente menor cantidad de casos positivos.
 
-0.4
+De manera similar, la sensitivity se encuentra en tensión con la specificity: en tanto la primera disminuye, la segunda aumenta como consecuencia de que el modelo, al incrementar los falsos positivos y, en consecuencia, predecir menor cantidad de casos positivos correrctamente, reduce también las predicciones negativas que verdaderamente son de esta clase.
 
-## 5.3. Obtener la matriz de confusión con el modelo y punto de corte elegidos. Interpretarla
+Un punto de corte adecuado para predecir si una persona es o no sobreviviente debería lograr cierta armonía entre estas tensiones. En este trabajo elegimos como punto de corte el valor 0.46 por ser aquel que logra el mayor accuracy con el conjunto de validación y encontrarse más cercano a los puntos donde se intersectan recall, precision y specificity.
 
-```{r}
-sel_cutoff = 0.4
+A continuación, realizamos la matriz de confusión obtenida con tal punto de corte.
+
+```{r} 
+# se establece el punto de corte
+sel_cutoff = max(cutoff.max_ac)
 
 table <- valid.results %>% 
   mutate(predicted_class=if_else(.fitted>sel_cutoff, 1, 0) %>% as.factor(), 
          Survived = factor(Survived))
 
-# Creamos la matriz de confusión
+# se crea la matriz de confusión
 confusionMatrix(table(table$Survived, table$predicted_class), positive = "1")
 ```
 
-# 6. Dataset de testeo
+Esta matriz nos permite visualizar la cantidad esperada de valores positivos y negativos y las predicciones realizadas por el modelo para dichas clases del siguiente modo:
 
-## 6.1. Leer el archivo titanic_complete_test.csv y transformar las variables Survived, Pclass y Embarked a factor
+|                   | Negativos esperados | Positivos esperados |
+|-------------------|---------------------|---------------------|
+|Negativos predichos|Verdaderos negativos |  Falsos negativos   |
+|Positivos predichos|  Falsos positivos   |Verdaderos positivos |
+
+Así, podemos ver que nuestro modelo predice adecuadamente 141 casos negativos y 83 positivos, y hay 25 casos que cataloga como negativos cuando en realidad son positivos y 19 con los que sucede lo contrario.
+
+# 6. Testeo
+
+En este apartado procedemos a testear el modelo seleccionado con un nuevo dataset no utilizado para entrenamiento ni testeo. 
+
+Cargamos el dataset y realizamos el mismo preprocesamiento que hicimos con el conjunto de entrenamiento: convertimos en factor las variables *Survived*, *Pclass* y *Embarked*.
+
+El conjunto de testeo utilizado cuenta con 418 registros y presenta una distribución de clases similar a aquella con la cual entrenamos el modelo.
 
 ```{r}
+# se carga el conjunto de testeo
 testset <- fread("titanic_complete_test.csv")
 
+# se convierten las variables a factores
 testset <- testset %>% 
   select(PassengerId, Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked) %>% 
   mutate(Survived = as_factor(Survived),
@@ -426,27 +469,37 @@ testset <- testset %>%
 glimpse(testset)
 ```
 
-## 6.2. Con el modelo y punto de corte elegidos clasificar a las personas del dataset de testing.
+```{r}
+# se calcula el porcentaje de sobrevivientes en el conjunto de testeo
+surv.testset <- nrow(testset[testset$Survived==1,])
+dist.testset <- round((surv.testset/nrow(testset))*100,0)
+print(paste("Porcentaje de sobrevivientes en el conjunto de testeo:", dist.testset,"%"))
+```
+
+Dado que ya hemos elegido el punto de corte y realizamos la validación, volvemos a entrenar nuestro modelo con todo el conjunto de entrenamiento, de modo que este cuente con una mayor cantidad de registros para realizar las predicciones.
 
 ```{r}
-sel_cutoff = 0.4
-
+# se entrena el modelo 2 con TODOS los datos para ENTRENAMIENTO
 model2test <- glm(logit_formulae$model2, family = 'binomial', data = dataset)
 
-# Agregamos la predicciones al dataset de testeo
+# se calculan las predicciones para el conjunto de TESTEO
 test.table = augment(x=model2test, newdata=testset, type.predict='response') 
 
-# Clasificamos utilizamos el punto de corte
+# se realiza la clasificación en clases según el punto de corte elegido
 test.table = test.table %>% 
   mutate(predicted_class=if_else(.fitted>sel_cutoff, 1, 0) %>% as.factor(),
          Survived= factor(Survived))
+
+test.table
 ```
 
-## 6.3. Obtener la matriz de confusión y comparar con la obtenida en el punto 5)c).
+Finalmente, realizamos la matriz de confusión y obtenemos las métricas para las nuevas predicciones.
+
+Es posible ver que el accuracy disminuyó, lo que era esperable dado que las predicciones se realizaron sobre un conjunto de datos no visto por el modelo previamente. De todos modos, un 75% de los casos de predicen correctamente; de estos, 206 corresponden a registros negativos y representan el 81% del total de casos negativos y 110 corresponden a registros positivos y, de acuerdo a la sentivity, constituyen el 66% del total de positivos. 
+
+Se ve de este modo que nuestor modelo predice mejor los casos negativos antes que los poritivos.
 
 ```{r}
-# Creamos la matriz de confusión
+# se crea la matriz de confusión
 confusionMatrix(table(test.table$Survived, test.table$predicted_class), positive = "1")
 ```
-
-# 7. Conclusiones
